@@ -209,18 +209,21 @@ def split_data(x, y, yerr, test_frac=0.1, random_state=14000605):
 def make_mock_like(z_real, y_real, yerr_real, cosmo_func, ndraws=1000):
     # generate mock data
     yz_input = cosmo_func(z_real) # input cosmology/true curve; points centered around this line
-    yzs = []
-    for i in range(ndraws):
-        yz_i = np.random.normal(loc=yz_input, scale=yerr_real, size=len(z_real))
-        yzs.append(yz_i)
-    y_mock_0 = np.array(yzs)
+    # yzs = []
+    # for i in range(ndraws):
+    #     yz_i = np.random.normal(loc=yz_input, scale=yerr_real, size=len(z_real))
+    #     yzs.append(yz_i)
+    # y_mock_0 = np.array(yzs)
 
-    # second line after np.mean(...) is an offset; otherwise, data will be on the true cruve
-    y_mock = np.array([np.mean(y_mock_0[:, i]) \
-                       + np.random.normal(loc=0, scale=np.abs(np.mean(y_mock_0[:, i]) - y_real[i])) \
-                       for i in np.arange(len(z_real))])
-    yerr_mock = np.array([np.std(y_mock_0[:, i]) for i in np.arange(len(z_real))])
+    # # second line after np.mean(...) is an offset; otherwise, data will be on the true cruve
+    # y_mock = np.array([np.mean(y_mock_0[:, i]) \
+    #                    + np.random.normal(loc=0, scale=np.abs(np.mean(y_mock_0[:, i]) - y_real[i])) \
+    #                    for i in np.arange(len(z_real))])
+    # yerr_mock = np.array([np.std(y_mock_0[:, i]) for i in np.arange(len(z_real))])
 
+    # mean
+    y_mock=np.random.normal(loc=yz_input, scale=yerr_real, size=len(z_real))
+    yerr_mock=yerr_real
     return z_real, y_mock, yerr_mock
 
 def create_whisker_plot(ax, means, uncertainties, colors, linestyles, markers, labels, \
