@@ -206,7 +206,7 @@ def split_data(x, y, yerr, test_frac=0.1, random_state=14000605):
     
     return {'train': train_dict, 'test': test_dict}
 
-def make_mock_like(z_real, y_real, yerr_real, cosmo_func, ndraws=1000):
+def how_to_mock(z_real, yerr_real, cosmo_func):
     # generate mock data
     yz_input = cosmo_func(z_real) # input cosmology/true curve; points centered around this line
     # yzs = []
@@ -253,12 +253,12 @@ def create_whisker_plot(ax, means, uncertainties, colors, linestyles, markers, l
     ax.legend()
 
 def add_corner(chains, labels, fig=None, color='red', ls='-', \
-               add_truth=None, truth_color='gray', range=None):
+               add_truth=None, truth_color='gray', range=None, quantiles=None, plot_density=True):
     return corner.corner(chains, labels=labels, color=color, \
                          fig=fig, hist_kwargs={'linestyle': ls, 'linewidth': 2, 'density': True}, \
                          plot_datapoints=False, fill_contours=False, \
-                         smooth=True, plot_density=False, \
-                         truths=add_truth, truth_color=truth_color, range=range)
+                         smooth=True, plot_density=plot_density, quantiles=quantiles, \
+                         truths=add_truth, truth_color=truth_color, range=range, levels=(0.68,0.95,))
 
 
 # 0.zzz methods: mcmc, ga, pyabc, etc.
@@ -344,7 +344,7 @@ class CosmoLearn:
         # generate mock data
         # Hz_samples = self.cosmo.H(z_cc).value
         z_mock, y_mock, yerr_mock=\
-        make_mock_like(z_cc, Hz_cc, sigHz_cc, cosmo_func=lambda x: self.cosmo.H(x).value, ndraws=ndraws)
+        how_to_mock(z_cc, sigHz_cc, cosmo_func=lambda x: self.cosmo.H(x).value)
         self.mock_data['CosmicChronometers']=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
         return z_mock, y_mock, yerr_mock
 
@@ -358,8 +358,8 @@ class CosmoLearn:
         # generate mock data: growth rate rsd
         # fs8z_samples = self.fs8z(z_rsd, de_model=de_model, k2cs2=k2cs2, hh=hh)
         z_mock, y_mock, yerr_mock=\
-        make_mock_like(z_rsd, fs8_rsd, sigfs8_rsd, \
-                       cosmo_func=lambda x: self.fs8z(x, de_model=de_model, k2cs2=k2cs2, hh=hh), ndraws=ndraws)
+        how_to_mock(z_rsd, sigfs8_rsd, \
+                    cosmo_func=lambda x: self.fs8z(x, de_model=de_model, k2cs2=k2cs2, hh=hh))
         self.mock_data['RedshiftSpaceDistorsions']=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
         return z_mock, y_mock, yerr_mock
 
@@ -367,7 +367,7 @@ class CosmoLearn:
         # generate mock data
         # muz_samples = self.cosmo.distmod(z_pp).value
         z_mock, y_mock, yerr_mock=\
-        make_mock_like(z_pp, muz_pp, errmuz_pp, cosmo_func=lambda x: self.cosmo.distmod(x).value, ndraws=ndraws)
+        how_to_mock(z_pp, errmuz_pp, cosmo_func=lambda x: self.cosmo.distmod(x).value)
         self.mock_data['SuperNovae']=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
         return z_mock, y_mock, yerr_mock
     
@@ -383,8 +383,7 @@ class CosmoLearn:
         # generate mock data
         # dVrdz_samples = self.dVrdz(z_desi1)
         z_mock, y_mock, yerr_mock=\
-        make_mock_like(z_desi1, DVrdz_desi1, DVrdzERR_desi1, \
-                       cosmo_func=lambda x: self.dVrdz(x), ndraws=ndraws)
+        how_to_mock(z_desi1, DVrdzERR_desi1, cosmo_func=lambda x: self.dVrdz(x))
         self.mock_data['BaryonAcousticOscillations']=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
         return z_mock, y_mock, yerr_mock
     
