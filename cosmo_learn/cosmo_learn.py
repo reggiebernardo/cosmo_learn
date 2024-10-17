@@ -1,5 +1,7 @@
 
 import numpy as np
+import matplotlib.pyplot as plt
+
 from .LISA_bright_sirens import generate
 from astropy.cosmology import w0waCDM
 from scipy.special import hyp2f1
@@ -319,11 +321,17 @@ def mcreconstruct_function(func, samples, x_rec, nmc=1000):
     func_err = np.std(func_samples, axis=0)
     return x_rec, func_mean, func_err
 
+
 # # 1 GW COSMO CLASS
 
 class CosmoLearn:
-    def __init__(self, params, rd_fid=147.46, Tcmb0=2.725, seed=None):
+    def __init__(self, params, de_model='no pert', k2cs2=1e-10, hh=1e-10, \
+                 pop_model='Pop III', rd_fid=147.46, Tcmb0=2.725, seed=None):
         self.params = params
+        self.de_model=de_model
+        self.k2cs2=k2cs2
+        self.hh=hh
+        self.pop_model=pop_model
         self.rd_fid=rd_fid
         self.Tcmb0=Tcmb0
         self.seed = seed
@@ -332,43 +340,65 @@ class CosmoLearn:
             np.random.seed(self.seed)
         self.mock_data={}
 
-
     # 1.1 MOCK DATA GENERATION
 
     def set_cosmo(self):
-        H0, Om0, Ok0, w0, wa, _=self.params
+        # H0, Om0, _, w0, _, _=self.params
+        H0, Om0, w0, _=self.params
         Tcmb0=self.Tcmb0
+        Ok0=0; wa=0
         self.cosmo=w0waCDM(H0=H0, Om0=Om0, Ode0=1-Om0-Ok0, w0=w0, wa=wa, Tcmb0=Tcmb0)
 
-    def make_cosmic_chronometers_like(self, ndraws=1000):
+    def cosmo_input(self, x, key='CosmicChronometers'):
+        H0, Om0, w0, s8=self.params
+        Ok0=0; wa=0
+        if key=='CosmicChronometers':
+            return self.cosmo.H(x).value
+        if key=='RedshiftSpaceDistorsions':
+            return fs8z_apy(x, self.cosmo, s8, de_model=self.de_model, k2cs2=self.k2cs2, hh=self.hh)
+        if key=='SuperNovae':
+            return self.cosmo.distmod(x).value
+        if key=='BaryonAcousticOscillations':
+            return dVrdz_apy(x, self.cosmo, rd_fid=self.rd_fid)
+        if key=='BrightSirens':
+            return self.cosmo.luminosity_distance(x).value/1000
+
+    def make_cosmic_chronometers_like(self, how_to_mock=how_to_mock):
         # generate mock data
         # Hz_samples = self.cosmo.H(z_cc).value
+        # z_mock, y_mock, yerr_mock=\
+        # how_to_mock(z_cc, sigHz_cc, cosmo_func=lambda x: self.cosmo.H(x).value)
+        key='CosmicChronometers'
         z_mock, y_mock, yerr_mock=\
-        how_to_mock(z_cc, sigHz_cc, cosmo_func=lambda x: self.cosmo.H(x).value)
-        self.mock_data['CosmicChronometers']=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
+        how_to_mock(z_cc, sigHz_cc, cosmo_func=lambda x: self.cosmo_input(x, key=key))
+        self.mock_data[key]=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
         return z_mock, y_mock, yerr_mock
 
-    def fs8z(self, z, de_model='no pert', k2cs2=1e-10, hh=1e-10):
+    def fs8z(self, z):
         # cosmo=astropy cosmology object
         # example: cosmo = w0waCDM(H0=H0, Om0=Om0, Ode0=1-Om0-Ok0, w0=w0, wa=wa, Tcmb0=2.725)
-        _, _, _, _, _, s8=self.params
-        return fs8z_apy(z, self.cosmo, s8, de_model=de_model, k2cs2=k2cs2, hh=hh)
+        _, _, _, s8=self.params
+        return fs8z_apy(z, self.cosmo, s8, de_model=self.de_model, k2cs2=self.k2cs2, hh=self.hh)
 
-    def make_rsd_like(self, de_model='no pert', k2cs2=1e-10, hh=1e-10, ndraws=1000):
+    def make_rsd_like(self, how_to_mock=how_to_mock):
         # generate mock data: growth rate rsd
         # fs8z_samples = self.fs8z(z_rsd, de_model=de_model, k2cs2=k2cs2, hh=hh)
-        z_mock, y_mock, yerr_mock=\
-        how_to_mock(z_rsd, sigfs8_rsd, \
-                    cosmo_func=lambda x: self.fs8z(x, de_model=de_model, k2cs2=k2cs2, hh=hh))
-        self.mock_data['RedshiftSpaceDistorsions']=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
+        # z_mock, y_mock, yerr_mock=how_to_mock(z_rsd, sigfs8_rsd, cosmo_func=lambda x: self.fs8z(x))
+        key='RedshiftSpaceDistorsions'
+        z_mock, y_mock, yerr_mock=how_to_mock(z_rsd, sigfs8_rsd, \
+                                              cosmo_func=lambda x: self.cosmo_input(x, key=key))
+        self.mock_data[key]=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
         return z_mock, y_mock, yerr_mock
 
-    def make_pantheon_plus_like(self, ndraws=1000):
+    def make_pantheon_plus_like(self, how_to_mock=how_to_mock):
         # generate mock data
         # muz_samples = self.cosmo.distmod(z_pp).value
+        # z_mock, y_mock, yerr_mock=\
+        # how_to_mock(z_pp, errmuz_pp, cosmo_func=lambda x: self.cosmo.distmod(x).value)
+        key='SuperNovae'
         z_mock, y_mock, yerr_mock=\
-        how_to_mock(z_pp, errmuz_pp, cosmo_func=lambda x: self.cosmo.distmod(x).value)
-        self.mock_data['SuperNovae']=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
+        how_to_mock(z_pp, errmuz_pp, cosmo_func=lambda x: self.cosmo_input(x, key=key))
+        self.mock_data[key]=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
         return z_mock, y_mock, yerr_mock
     
     def dVrdz(self, z):
@@ -379,65 +409,281 @@ class CosmoLearn:
         dMz=self.cosmo.luminosity_distance(z).value/(1+z) # transverse to line-of-sight
         return ((z*(dMz**2)*dHz)**(1/3))/(self.rd_fid)
 
-    def make_desi1_like(self, ndraws=1000):
+    def make_desi1_like(self, how_to_mock=how_to_mock):
         # generate mock data
         # dVrdz_samples = self.dVrdz(z_desi1)
+        # z_mock, y_mock, yerr_mock=\
+        # how_to_mock(z_desi1, DVrdzERR_desi1, cosmo_func=lambda x: self.dVrdz(x))
+        key='BaryonAcousticOscillations'
         z_mock, y_mock, yerr_mock=\
-        how_to_mock(z_desi1, DVrdzERR_desi1, cosmo_func=lambda x: self.dVrdz(x))
-        self.mock_data['BaryonAcousticOscillations']=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
+        how_to_mock(z_desi1, DVrdzERR_desi1, cosmo_func=lambda x: self.cosmo_input(x, key=key))
+        self.mock_data[key]=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
         return z_mock, y_mock, yerr_mock
     
-    def make_bright_sirens_mock(self, pop_model='Pop III', years=1):
+    def make_bright_sirens_mock(self, years=3):
         # pop_models=['Pop III', 'Delay', 'No Delay']
-        z_mock, y_mock, yerr_mock = generate(population=pop_model, years=years, params=self.params)
+        H0, Om0, w0, _=self.params
+        Ok0=0; wa=0
+        params_w0wa=[H0, Om0, Ok0, w0, wa] # input to LISA code is w0wa params: H0, Om0, Ok0, w0, wa
+        z_mock, y_mock, yerr_mock = generate(population=self.pop_model, years=years, params=params_w0wa)
         self.mock_data['BrightSirens']=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
         return z_mock, y_mock, yerr_mock
 
-    def plot_train_test_data(self, ax, Data_Key, alpha=0.7, fmt='.', label_train='Training Set', \
-                             label_test='Test Set'):
+    def make_mock(self, mock_keys, pop_model='Pop III', years=3):
+        self.set_cosmo()
+        for key in mock_keys:
+            if key=='CosmicChronometers':
+                self.make_cosmic_chronometers_like()
+            if key=='SuperNovae':
+                self.make_pantheon_plus_like()
+            if key=='BaryonAcousticOscillations':
+                self.make_desi1_like()
+            if key=='BrightSirens':
+                self.make_bright_sirens_mock(years=years)
+            if key=='RedshiftSpaceDistorsions':
+                self.make_rsd_like()
+
+    def plot_train_test_data(self, ax, Data_Key, alpha=0.7, markersize=3, \
+                             fmt_train='go', label_train='Training Set', fmt_test='ms', label_test='Test Set'):
         if Data_Key != 'BaryonAcousticOscillations':
             Cosmo_Data=self.mock_data[Data_Key]
             ax.errorbar(Cosmo_Data['train']['x'], Cosmo_Data['train']['y'], yerr=Cosmo_Data['train']['yerr'], \
-                        fmt=fmt, alpha=alpha, label=label_train)
+                        markersize=markersize, fmt=fmt_train, alpha=alpha, label=label_train)
             ax.errorbar(Cosmo_Data['test']['x'], Cosmo_Data['test']['y'], yerr=Cosmo_Data['test']['yerr'], \
-                        fmt=fmt, alpha=alpha, label=label_test)
+                        markersize=markersize, fmt=fmt_test, alpha=alpha, label=label_test)
         if Data_Key == 'BaryonAcousticOscillations':
             Cosmo_Data=self.mock_data[Data_Key]
             ax.errorbar(Cosmo_Data['train']['x'], Cosmo_Data['train']['y']/(Cosmo_Data['train']['x']**(2/3)), \
                         yerr=Cosmo_Data['train']['yerr']/(Cosmo_Data['train']['x']**(2/3)), \
-                        fmt=fmt, alpha=alpha, label=label_train)
+                        markersize=markersize, fmt=fmt_train, alpha=alpha, label=label_train)
             ax.errorbar(Cosmo_Data['test']['x'], Cosmo_Data['test']['y']/(Cosmo_Data['test']['x']**(2/3)), \
                         yerr=Cosmo_Data['test']['yerr']/(Cosmo_Data['test']['x']**(2/3)), \
-                        fmt=fmt, alpha=alpha, label=label_test)
+                        markersize=markersize, fmt=fmt_test, alpha=alpha, label=label_test)
+
+    def plot_residuals(self, ax, Data_Key, markersize=3, fmt_train='go', fmt_test='ms', alpha=0.7):
+        Cosmo_Data = self.mock_data[Data_Key]
+        ax.errorbar(Cosmo_Data['train']['x'], \
+                    Cosmo_Data['train']['y'] - self.cosmo_input(Cosmo_Data['train']['x'], key=Data_Key), 
+                    yerr=Cosmo_Data['train']['yerr'], markersize=markersize, fmt=fmt_train, alpha=alpha)
+        ax.errorbar(Cosmo_Data['test']['x'], \
+                    Cosmo_Data['test']['y'] - self.cosmo_input(Cosmo_Data['test']['x'], key=Data_Key), 
+                    yerr=Cosmo_Data['test']['yerr'], markersize=markersize, fmt=fmt_test, alpha=alpha)
+
+
+    def show_mocks(self, ax=None, show_input=False, figsize=(10, 10), markersize=3, \
+                   fmt_train='go', label_train='Training Set', fmt_test='ms', label_test='Test Set', \
+                   fmt_input='k-', label_input='Input', alpha_all=0.7, alpha_sne=0.1):
+        fig = None  # Initialize fig to None
+        if ax is None:
+            fig, ax = plt.subplots(nrows=len(self.mock_data.keys()), figsize=figsize)
+        
+        for i, key in enumerate(self.mock_data.keys()):
+            if key == 'CosmicChronometers':
+                self.plot_train_test_data(ax[i], key, alpha=alpha_all, markersize=markersize, \
+                                          fmt_train=fmt_train, label_train=label_train, \
+                                          fmt_test=fmt_test, label_test=label_test)
+                ax[i].set_ylabel(r'$H(z)$')
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i].plot(x_space, self.cosmo_input(x_space, key=key), fmt_input, alpha=alpha_all, label=label_input)
+            elif key == 'SuperNovae':
+                self.plot_train_test_data(ax[i], key, alpha=alpha_sne, markersize=markersize, \
+                                          fmt_train=fmt_train, label_train=label_train, \
+                                          fmt_test=fmt_test, label_test=label_test)
+                ax[i].set_ylabel(r'$\mu(z)$')
+                ax[i].set_xscale('log')
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.logspace(np.log10(min(x_train)), np.log10(max(x_train)))
+                    ax[i].plot(x_space, self.cosmo_input(x_space, key=key), fmt_input, alpha=alpha_all, label=label_input)
+            elif key == 'BaryonAcousticOscillations':
+                self.plot_train_test_data(ax[i], key, alpha=alpha_all, markersize=markersize, \
+                                          fmt_train=fmt_train, label_train=label_train, \
+                                          fmt_test=fmt_test, label_test=label_test)
+                ax[i].set_ylabel(r'$D_{\rm V}/\left( r_{\rm D} z^{2/3} \right)$')
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i].plot(x_space, self.cosmo_input(x_space, key=key)/(x_space**(2/3)), \
+                               fmt_input, alpha=alpha_all, label=label_input)
+            elif key == 'BrightSirens':
+                self.plot_train_test_data(ax[i], key, alpha=alpha_all, markersize=markersize, \
+                                          fmt_train=fmt_train, label_train=label_train, \
+                                          fmt_test=fmt_test, label_test=label_test)
+                ax[i].set_ylabel(r'$d_L(z)$')
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i].plot(x_space, self.cosmo_input(x_space, key=key), fmt_input, alpha=alpha_all, label=label_input)
+            elif key == 'RedshiftSpaceDistorsions':
+                self.plot_train_test_data(ax[i], key, alpha=alpha_all, markersize=markersize, \
+                                          fmt_train=fmt_train, label_train=label_train, \
+                                          fmt_test=fmt_test, label_test=label_test)
+                ax[i].set_ylabel(r'$f \sigma_8(z)$')
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i].plot(x_space, self.cosmo_input(x_space, key=key), fmt_input, alpha=alpha_all, label=label_input)
+
+        ax[-1].set_xlabel(r'Redshift $z$')
+
+        # Return fig and ax only if a new figure was created (i.e., if ax was None)
+        if fig is not None:
+            return fig, ax
+        else:
+            return None  # No return when ax is passed
+
+    def show_mocks_and_residuals(self, ax=None, show_input=False, figsize=(10, 10), markersize=3, \
+                                 fmt_train='go', label_train='Training Set', fmt_test='ms', label_test='Test Set', \
+                                 ls_input='-', color_input='k', label_input='Input', alpha_all=0.7, alpha_sne=0.1):
+        fig = None  # Initialize fig to None
+        if ax is None:
+            fig, ax = plt.subplots(nrows=len(self.mock_data.keys()), ncols=2, figsize=figsize)
+        
+        for i, key in enumerate(self.mock_data.keys()):
+            if key == 'CosmicChronometers':
+                self.plot_train_test_data(ax[i,0], key, alpha=alpha_all, markersize=markersize, \
+                                          fmt_train=fmt_train, label_train=label_train, \
+                                          fmt_test=fmt_test, label_test=label_test)
+                ax[i,0].set_ylabel(r'$H(z)$')
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i,0].plot(x_space, self.cosmo_input(x_space, key=key), \
+                                 ls=ls_input, color=color_input, alpha=alpha_all, label=label_input)
+
+                self.plot_residuals(ax[i,1], key, markersize=markersize, \
+                                    fmt_train=fmt_train, fmt_test=fmt_test, alpha=alpha_all)
+
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i,1].axhline(0, ls=ls_input, color=color_input, alpha=alpha_all)
+                ax[i,1].yaxis.tick_right()
+
+            elif key == 'SuperNovae':
+                self.plot_train_test_data(ax[i,0], key, alpha=alpha_sne, markersize=markersize, \
+                                          fmt_train=fmt_train, label_train=label_train, \
+                                          fmt_test=fmt_test, label_test=label_test)
+                ax[i,0].set_ylabel(r'$\mu(z)$')
+                ax[i,0].set_xscale('log'); ax[i,1].set_xscale('log')
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.logspace(np.log10(min(x_train)), np.log10(max(x_train)))
+                    ax[i,0].plot(x_space, self.cosmo_input(x_space, key=key), \
+                                 ls=ls_input, color=color_input, alpha=alpha_all, label=label_input)
+
+                self.plot_residuals(ax[i,1], key, markersize=markersize, \
+                                    fmt_train=fmt_train, fmt_test=fmt_test, alpha=alpha_sne)
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i,1].axhline(0, ls=ls_input, color=color_input, alpha=alpha_all)
+                ax[i,1].yaxis.tick_right()
+                        
+            elif key == 'BaryonAcousticOscillations':
+                self.plot_train_test_data(ax[i,0], key, alpha=alpha_all, markersize=markersize, \
+                                          fmt_train=fmt_train, label_train=label_train, \
+                                          fmt_test=fmt_test, label_test=label_test)
+                ax[i,0].set_ylabel(r'$D_{\rm V}/\left( r_{\rm D} z^{2/3} \right)$')
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i,0].plot(x_space, self.cosmo_input(x_space, key=key)/(x_space**(2/3)), \
+                                 ls=ls_input, color=color_input, alpha=alpha_all, label=label_input)
+
+                self.plot_residuals(ax[i,1], key, markersize=markersize, \
+                                    fmt_train=fmt_train, fmt_test=fmt_test, alpha=alpha_all)
+
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i,1].axhline(0, ls=ls_input, color=color_input, alpha=alpha_all)
+                ax[i,1].yaxis.tick_right()
+
+            elif key == 'BrightSirens':
+                self.plot_train_test_data(ax[i,0], key, alpha=alpha_all, markersize=markersize, \
+                                          fmt_train=fmt_train, label_train=label_train, \
+                                          fmt_test=fmt_test, label_test=label_test)
+                ax[i,0].set_ylabel(r'$d_L(z)$')
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i,0].plot(x_space, self.cosmo_input(x_space, key=key), \
+                                 ls=ls_input, color=color_input, alpha=alpha_all, label=label_input)
+
+                self.plot_residuals(ax[i,1], key, markersize=markersize, \
+                                    fmt_train=fmt_train, fmt_test=fmt_test, alpha=alpha_all)
+
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i,1].axhline(0, ls=ls_input, color=color_input, alpha=alpha_all)
+                ax[i,1].yaxis.tick_right()
+
+            elif key == 'RedshiftSpaceDistorsions':
+                self.plot_train_test_data(ax[i,0], key, alpha=alpha_all, markersize=markersize, \
+                                          fmt_train=fmt_train, label_train=label_train, \
+                                          fmt_test=fmt_test, label_test=label_test)
+                ax[i,0].set_ylabel(r'$f \sigma_8(z)$')
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i,0].plot(x_space, self.cosmo_input(x_space, key=key), \
+                                 ls=ls_input, color=color_input, alpha=alpha_all, label=label_input)
+
+                self.plot_residuals(ax[i,1], key, markersize=markersize, \
+                                    fmt_train=fmt_train, fmt_test=fmt_test, alpha=alpha_all)
+
+                if show_input:
+                    x_train=self.mock_data[key]['train']['x']
+                    x_space=np.linspace(min(x_train), max(x_train))
+                    ax[i,1].axhline(0, ls=ls_input, color=color_input, alpha=alpha_all)
+                ax[i,1].yaxis.tick_right()
+
+        ax[-1,0].set_xlabel(r'Redshift $z$'); ax[-1,1].set_xlabel(r'Redshift $z$')
+        ax[0,0].set_title(r'Mock Observable'); ax[0,1].set_title(r'Residuals')
+
+        # Return fig and ax only if a new figure was created (i.e., if ax was None)
+        if fig is not None:
+            return fig, ax
+        else:
+            return None  # No return when ax is passed
 
 
     # 1.2 LIKELIHOOD SETUP
 
-    def loglike_wcdm(self, model_params, Tcmb0=None, de_model='no pert', k2cs2=1e-10, hh=1e-10):
-        # H0, Om0, w0, s8=model_params
-        # if rd_fid==None:
-        #     rd_fid=self.rd_fid
+    def cosmo_func_wcdm(self, x, model_params, key='CosmicChronometers'):
         H0, Om0, w0, s8, rd_fid=model_params
-        if Tcmb0==None:
-            Tcmb0=self.Tcmb0
         Ok0=0; wa=0
-        cosmo_model=w0waCDM(H0=H0, Om0=Om0, Ode0=1-Om0-Ok0, w0=w0, wa=wa, Tcmb0=Tcmb0)
+        cosmo_model=w0waCDM(H0=H0, Om0=Om0, Ode0=1-Om0-Ok0, w0=w0, wa=wa, Tcmb0=self.Tcmb0)
+        if key=='CosmicChronometers':
+            return cosmo_model.H(x).value
+        if key=='RedshiftSpaceDistorsions':
+            return fs8z_apy(x, cosmo_model, s8, de_model=self.de_model, k2cs2=self.k2cs2, hh=self.hh)
+        if key=='SuperNovae':
+            return cosmo_model.distmod(x).value
+        if key=='BaryonAcousticOscillations':
+            return dVrdz_apy(x, cosmo_model, rd_fid=rd_fid)
+        if key=='BrightSirens':
+            return cosmo_model.luminosity_distance(x).value/1000
+
+    def loglike_wcdm(self, model_params, Tcmb0=None, de_model='no pert', k2cs2=1e-10, hh=1e-10):
         ll=0
         for key, val in self.mock_data.items():
             train_data=val['train']
             x, y, yerr=train_data['x'], train_data['y'], train_data['yerr']
             if key=='CosmicChronometers':
-                ll += -0.5*chi2(x, y, yerr, model_func=lambda x: cosmo_model.H(x).value)
+                ll += -0.5*chi2(x, y, yerr, model_func=lambda x: self.cosmo_func_wcdm(x, model_params, key=key))
             if key=='RedshiftSpaceDistorsions':
-                ll += -0.5*chi2(x, y, yerr, \
-                                model_func=lambda x: fs8z_apy(x, cosmo_model, s8, \
-                                                              de_model=de_model, k2cs2=k2cs2, hh=hh))
+                ll += -0.5*chi2(x, y, yerr, model_func=lambda x: self.cosmo_func_wcdm(x, model_params, key=key))
             if key=='SuperNovae':
-                ll += -0.5*chi2(x, y, yerr, model_func=lambda x: cosmo_model.distmod(x).value)
+                ll += -0.5*chi2(x, y, yerr, model_func=lambda x: self.cosmo_func_wcdm(x, model_params, key=key))
             if key=='BaryonAcousticOscillations':
-                ll += -0.5*chi2(x, y, yerr, model_func=lambda x: dVrdz_apy(x, cosmo_model, rd_fid=rd_fid))
+                ll += -0.5*chi2(x, y, yerr, model_func=lambda x: self.cosmo_func_wcdm(x, model_params, key=key))
             if key=='BrightSirens':
-                ll += -0.5*chi2(x, y, yerr, model_func=lambda x: cosmo_model.luminosity_distance(x).value/1000)
+                ll += -0.5*chi2(x, y, yerr, model_func=lambda x: self.cosmo_func_wcdm(x, model_params, key=key))
 
         return ll
 
