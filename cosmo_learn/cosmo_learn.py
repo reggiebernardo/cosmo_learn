@@ -20,6 +20,20 @@ from scipy.optimize import minimize
 from geneticalgorithm import geneticalgorithm as GA
 from numdifftools import Hessian
 
+# from gp6.gp6 import GP
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import (ConstantKernel, RBF, WhiteKernel, \
+                                              Matern, RationalQuadratic, \
+                                              ExpSineSquared, DotProduct)
+
+kernels_sk = {'RBF': ConstantKernel()*RBF()+WhiteKernel(), \
+              'Matern': ConstantKernel()*Matern(), \
+              'RationalQuadratic': ConstantKernel()*RationalQuadratic(), \
+              'ExpSineSquared': ConstantKernel()*ExpSineSquared(), \
+              'DotProduct': ConstantKernel()*DotProduct()}
+
+from .BRR_scikit import BRR_sk
+
 import corner
 
 from numpy.random import multivariate_normal as MN
@@ -777,4 +791,32 @@ class CosmoLearn:
         self.gaFisher_samples=gaFisher_samples
         return gaFisher_samples
 
+    def train_gp(self, kernel_key='RBF', n_restarts_optimizer = 10):
+        kernel=kernels_sk[kernel_key]
+        GP_dict={}
+        for key in self.mock_data.keys():
+            if key != 'SuperNovae':
+                train_data=self.mock_data[key]['train']
+                x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
+                gp_cosmo = GaussianProcessRegressor(kernel = kernel, alpha = y[:, 1]**2, \
+                                                    n_restarts_optimizer = n_restarts_optimizer)
+                gp_fit=gp_cosmo.fit(x.reshape(-1, 1), y[:, 0])
+                GP_dict[key]==gp_cosmo
+            if key == 'SuperNovae':
+                train_data=self.mock_data[key]['train']
+                x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
+                gp_cosmo = GaussianProcessRegressor(kernel = kernel, alpha = y[:, 1]**2, \
+                                                    n_restarts_optimizer = n_restarts_optimizer)
+                gp_fit=gp_cosmo.fit(np.log10(x).reshape(-1, 1), y[:, 0])
+                GP_dict[key]==gp_cosmo
+        self.GP_dict=GP_dict
 
+    # def predict_gp(self):
+        
+
+
+
+
+# x_rec=np.linspace(min(x), max(x), 1000)
+# x_rec=np.linspace(np.log10(min(x)), np.log10(max(x)), 1000)
+# ymean_rec_gp, yerr_rec_gp = gp_cosmo.predict(x_rec.reshape(-1, 1), return_std=True)
