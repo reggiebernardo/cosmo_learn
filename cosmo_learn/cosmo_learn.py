@@ -800,18 +800,43 @@ class CosmoLearn:
                 x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
                 gp_cosmo = GaussianProcessRegressor(kernel = kernel, alpha = y[:, 1]**2, \
                                                     n_restarts_optimizer = n_restarts_optimizer)
-                gp_fit=gp_cosmo.fit(x.reshape(-1, 1), y[:, 0])
-                GP_dict[key]==gp_cosmo
+                gp_cosmo.fit(x.reshape(-1, 1), y[:, 0]);
+                GP_dict[key]=gp_cosmo
             if key == 'SuperNovae':
                 train_data=self.mock_data[key]['train']
                 x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
                 gp_cosmo = GaussianProcessRegressor(kernel = kernel, alpha = y[:, 1]**2, \
                                                     n_restarts_optimizer = n_restarts_optimizer)
-                gp_fit=gp_cosmo.fit(np.log10(x).reshape(-1, 1), y[:, 0])
-                GP_dict[key]==gp_cosmo
+                gp_cosmo.fit(np.log10(x).reshape(-1, 1), y[:, 0]);
+                GP_dict[key]=gp_cosmo
         self.GP_dict=GP_dict
 
-    # def predict_gp(self):
+    # def predict_gp(self, x_test=None, show_gp=False):
+    #     for key in self.mock_data.keys():
+    #         if x_test==None:
+    #             x_rec=self.mock_data[key]['train']['x']
+    #         gp_cosmo=GP_dict[key]
+    #         ymean_rec_gp, yerr_rec_gp = gp_cosmo.predict(x_rec.reshape(-1, 1), return_std=True)
+
+
+    def train_brr(self, n_order = 3):
+        BRR_dict={}
+        for key in self.mock_data.keys():
+            if key != 'SuperNovae':
+                train_data=self.mock_data[key]['train']
+                x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
+                brr_cosmo = BRR_sk(n_order = n_order)
+                brr_cosmo.train(x, y[:, 0], y[:, 1]);
+                BRR_dict[key]=brr_cosmo
+            if key == 'SuperNovae':
+                train_data=self.mock_data[key]['train']
+                x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
+                brr_cosmo = BRR_sk(n_order = n_order)
+                brr_cosmo.train(np.log10(x), y[:, 0], y[:, 1]);
+                BRR_dict[key]=brr_cosmo
+        self.BRR_dict=BRR_dict
+
+        
         
 
 
