@@ -777,10 +777,10 @@ class CosmoLearn:
         cov_FisherM = np.linalg.inv(FisherM)
         gaFisher_samples = np.random.multivariate_normal(ga_sol, cov_FisherM, size=nsamples)
 
-        # Compute percentiles for each parameter
+        # compute percentiles for each parameter
         param_percentiles = np.percentile(gaFisher_samples, [16, 50, 84], axis=0)
 
-        # Print GA results
+        # print GA results
         print()
         print("GA-Fisher result:")
         for i, (lower, median, upper) in enumerate(param_percentiles.T):
@@ -810,14 +810,6 @@ class CosmoLearn:
                 gp_cosmo.fit(np.log10(x).reshape(-1, 1), y[:, 0]);
                 GP_dict[key]=gp_cosmo
         self.GP_dict=GP_dict
-
-    # def predict_gp(self, x_test=None, show_gp=False):
-    #     for key in self.mock_data.keys():
-    #         if x_test==None:
-    #             x_rec=self.mock_data[key]['train']['x']
-    #         gp_cosmo=GP_dict[key]
-    #         ymean_rec_gp, yerr_rec_gp = gp_cosmo.predict(x_rec.reshape(-1, 1), return_std=True)
-
 
     def train_brr(self, n_order = 3):
         BRR_dict={}
