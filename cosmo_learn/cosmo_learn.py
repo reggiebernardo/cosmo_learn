@@ -268,10 +268,10 @@ def create_whisker_plot(ax, means, uncertainties, colors, linestyles, markers, l
     ax.set_xlabel(xlabel)
     ax.legend()
 
-def add_corner(chains, labels, fig=None, color='red', ls='-', \
+def add_corner(chains, labels, fig=None, color='red', ls='-', lw=2, alpha=0.75, \
                add_truth=None, truth_color='gray', range=None, quantiles=None, plot_density=True):
     return corner.corner(chains, labels=labels, color=color, \
-                         fig=fig, hist_kwargs={'linestyle': ls, 'linewidth': 2, 'density': True}, \
+                         fig=fig, hist_kwargs={'linestyle': ls, 'linewidth': lw, 'alpha': alpha, 'density': True}, \
                          plot_datapoints=False, fill_contours=False, \
                          smooth=True, plot_density=plot_density, quantiles=quantiles, \
                          truths=add_truth, truth_color=truth_color, range=range, levels=(0.68,0.95,))
@@ -354,7 +354,13 @@ class CosmoLearn:
             np.random.seed(self.seed)
         self.mock_data={}
 
-    # 1.1 MOCK DATA GENERATION
+        # ml defaults
+        self.ga_params={'max_num_iteration': 1000, 'population_size':100, \
+                        'mutation_probability': 0.25, 'elit_ratio': 0.01, \
+                        'crossover_probability': 0.5, 'parents_portion': 0.3, \
+                        'crossover_type':'uniform', 'max_iteration_without_improv': None}
+
+    #### 1.1 Mock Data Generation
 
     def set_cosmo(self):
         # H0, Om0, _, w0, _, _=self.params
@@ -487,7 +493,7 @@ class CosmoLearn:
     def show_mocks(self, ax=None, show_input=False, figsize=(10, 10), markersize=3, \
                    fmt_train='go', label_train='Training Set', fmt_test='ms', label_test='Test Set', \
                    fmt_input='k-', label_input='Input', alpha_all=0.7, alpha_sne=0.1):
-        fig = None  # Initialize fig to None
+        fig = None  # initialize fig to None
         if ax is None:
             fig, ax = plt.subplots(nrows=len(self.mock_data.keys()), figsize=figsize)
         
@@ -542,16 +548,16 @@ class CosmoLearn:
 
         ax[-1].set_xlabel(r'Redshift $z$')
 
-        # Return fig and ax only if a new figure was created (i.e., if ax was None)
+        # return fig and ax only if a new figure was created (i.e., if ax was None)
         if fig is not None:
             return fig, ax
         else:
-            return None  # No return when ax is passed
+            return None  # no return when ax is passed
 
     def show_mocks_and_residuals(self, ax=None, show_input=False, figsize=(10, 10), markersize=3, \
                                  fmt_train='go', label_train='Training Set', fmt_test='ms', label_test='Test Set', \
                                  ls_input='-', color_input='k', label_input='Input', alpha_all=0.7, alpha_sne=0.1):
-        fig = None  # Initialize fig to None
+        fig = None  # initialize fig to None
         if ax is None:
             fig, ax = plt.subplots(nrows=len(self.mock_data.keys()), ncols=2, figsize=figsize)
         
@@ -659,14 +665,14 @@ class CosmoLearn:
         ax[-1,0].set_xlabel(r'Redshift $z$'); ax[-1,1].set_xlabel(r'Redshift $z$')
         ax[0,0].set_title(r'Mock Observable'); ax[0,1].set_title(r'Residuals')
 
-        # Return fig and ax only if a new figure was created (i.e., if ax was None)
+        # return fig and ax only if a new figure was created (i.e., if ax was None)
         if fig is not None:
             return fig, ax
         else:
-            return None  # No return when ax is passed
+            return None  # no return when ax is passed
 
 
-    # 1.2 LIKELIHOOD SETUP
+    #### 1.2 Likelihoods
 
     def cosmo_func_wcdm(self, x, model_params, key='CosmicChronometers'):
         H0, Om0, w0, s8, rd_fid=model_params
@@ -742,7 +748,7 @@ class CosmoLearn:
         return lp + lk
 
 
-    # 1.3 METHODS
+    #### 1.3 Methods/Training
 
     def get_mcmc_samples(self, nwalkers, dres, llprob, p0, nburn=100, nmcmc=500):
         print('Optimizing initial position...')
@@ -756,14 +762,10 @@ class CosmoLearn:
         return mcmc_samples
 
     def get_gaFisher_samples(self, fitness_func, prior, \
-                             ga_params={'max_num_iteration': 1000, 'population_size':100, \
-                                        'mutation_probability': 0.25, 'elit_ratio': 0.01, \
-                                        'crossover_probability': 0.5, 'parents_portion': 0.3, \
-                                        'crossover_type':'uniform', 'max_iteration_without_improv': None}, \
                              llprob=None, nsamples=10000, convergence_curve=False):
 
         ga_model=GA(function=fitness_func,dimension=len(prior),variable_type='real', \
-                    variable_boundaries=np.array(prior), algorithm_parameters=ga_params, \
+                    variable_boundaries=np.array(prior), algorithm_parameters=self.ga_params, \
                     convergence_curve=convergence_curve)
         ga_model.run()
         self.ga_model=ga_model
@@ -828,8 +830,88 @@ class CosmoLearn:
                 BRR_dict[key]=brr_cosmo
         self.BRR_dict=BRR_dict
 
+
+    #### 1.4 Show Best Fits
+
+    def show_param_posterior(self, fig=None, method='MCMC', show_rd=False, \
+                             color='red', ls='-', lw=2, alpha=0.75, \
+                             show_truth=False, truth_color='gray', range=None):
+        # default labels
+        labels = [r'$H_0$', r'$\Omega_{m0}$', r'$w$', r'$S_8=\sigma_8 \sqrt{\Omega_{m0}/0.3}$']
+        if show_rd:
+            labels.append(r'$r_{\rm D}$')  # add extra label if `show_rd` is True
         
+        # select samples based on the method
+        if method == 'MCMC':
+            samples = self.mcmc_samples
+        elif method == 'GAFisher':
+            samples = self.gaFisher_samples
+        else:
+            raise ValueError("supported methods: 'MCMC' and 'GAFisher'")
         
+        # if `show_rd` is False, exclude the last column (assumes `r_D` is the last parameter)
+        if not show_rd:
+            samples = samples[:, :4]  # Only use the first four columns
+
+        # determine truths if requested
+        add_truth = None
+        if show_truth:
+            add_truth = list(self.params)
+            if show_rd:
+                add_truth.append(self.rd_fid)
+
+        # if `fig` is None, create a new corner plot
+        if fig is None:
+            corner_plot = add_corner(samples, labels, color=color, ls=ls, lw=lw, alpha=alpha, \
+                                     add_truth=add_truth, truth_color=truth_color, range=range)
+            return corner_plot
+        else:
+            # add to an existing figure without returning
+            add_corner(samples, labels, fig=fig, color=color, ls=ls, lw=lw, alpha=alpha, \
+                       add_truth=add_truth, truth_color=truth_color, range=range)
+
+    def show_trained_ml(self, ax=None, figsize=(10, 10), method='GP', \
+                        n_sigma_rec=2, n_recz=100, color='red', alpha=0.25, hatch=None, label='None'):
+        fig = None  # initialize fig to None
+        if ax is None:
+            fig, ax = plt.subplots(nrows=len(self.mock_data.keys()), figsize=figsize)
+        
+        for i, key in enumerate(self.mock_data.keys()):
+            x_train=self.mock_data[key]['train']['x']
+            if key=='SuperNovae':
+                x_rec=np.linspace(np.log10(min(x_train)), np.log10(max(x_train)), n_recz)
+            else:
+                x_rec=np.linspace(min(x_train), max(x_train), n_recz)
+
+            # reconstruction
+            if method=='GP':
+                rec_cosmo=self.GP_dict[key]
+                func_mean, func_err = rec_cosmo.predict(x_rec.reshape(-1, 1), return_std=True)
+            if method=='BRR':
+                rec_cosmo=self.BRR_dict[key]
+                _, func_mean, func_var = rec_cosmo.predict(x_rec).values()
+                func_err = np.sqrt(func_var)
+
+            if key!='BaryonAcousticOscillations':
+                if key != 'SuperNovae':
+                    ax[i].fill_between(x_rec, func_mean-n_sigma_rec*func_err, func_mean+n_sigma_rec*func_err, \
+                                       facecolor=color, edgecolor=color, alpha=alpha, hatch=hatch, label=label)
+                if key == 'SuperNovae':
+                    ax[i].fill_between(10**x_rec, func_mean-n_sigma_rec*func_err, func_mean+n_sigma_rec*func_err, \
+                                       facecolor=color, edgecolor=color, alpha=alpha, hatch=hatch, label=label)
+            if key=='BaryonAcousticOscillations':
+                ax[i].fill_between(x_rec, \
+                                   (func_mean-n_sigma_rec*func_err)/(x_rec**(2/3)), \
+                                   (func_mean+n_sigma_rec*func_err)/(x_rec**(2/3)), \
+                                   facecolor=color, edgecolor=color, alpha=alpha, hatch=hatch, label=label)
+
+        ax[-1].set_xlabel(r'Redshift $z$')
+
+        # return fig and ax only if a new figure was created (i.e., if ax was None)
+        if fig is not None:
+            return fig, ax
+        else:
+            return None  # no return when ax is passed        
 
 
 
