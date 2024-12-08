@@ -870,6 +870,46 @@ class CosmoLearn:
             add_corner(samples, labels, fig=fig, color=color, ls=ls, lw=lw, alpha=alpha, \
                        add_truth=add_truth, truth_color=truth_color, range=range)
 
+    def show_bestfit_curve(self, ax=None, figsize=(10, 10), method='MCMC', nmc=1000, \
+                           n_sigma_rec=2, n_recz=100, color='red', alpha=0.25, hatch=None, label='None'):
+        fig = None  # initialize fig to None
+        if ax is None:
+            fig, ax = plt.subplots(nrows=len(self.mock_data.keys()), figsize=figsize)
+        
+        for i, key in enumerate(self.mock_data.keys()):
+            cosmo_func=lambda x, p: self.cosmo_func_wcdm(x, p, key=key)
+            x_train=self.mock_data[key]['train']['x']
+            if key=='SuperNovae':
+                x_rec=np.logspace(np.log10(min(x_train)), np.log10(max(x_train)), n_recz)
+            else:
+                x_rec=np.linspace(min(x_train), max(x_train), n_recz)
+
+            # parametric reconstruction---assuming Gaussian samples
+            if method=='MCMC':
+                samples=self.mcmc_samples
+            if method=='GAFisher':
+                samples=self.gaFisher_samples
+            x_rec, func_mean, func_err=mcreconstruct_function(cosmo_func, samples, x_rec=x_rec, nmc=nmc)
+
+            if key!='BaryonAcousticOscillations':
+                ax[i].fill_between(x_rec, func_mean-n_sigma_rec*func_err, func_mean+n_sigma_rec*func_err, \
+                                   facecolor=color, edgecolor=color, alpha=alpha, hatch=hatch, label=label)
+            if key=='BaryonAcousticOscillations':
+                ax[i].fill_between(x_rec, \
+                                   (func_mean-n_sigma_rec*func_err)/(x_rec**(2/3)), \
+                                   (func_mean+n_sigma_rec*func_err)/(x_rec**(2/3)), \
+                                   facecolor=color, edgecolor=color, alpha=alpha, hatch=hatch, label=label)
+
+        ax[-1].set_xlabel(r'Redshift $z$')
+
+        # return fig and ax only if a new figure was created (i.e., if ax was None)
+        if fig is not None:
+            return fig, ax
+        else:
+            return None  # no return when ax is passed   
+
+
+
     def show_trained_ml(self, ax=None, figsize=(10, 10), method='GP', \
                         n_sigma_rec=2, n_recz=100, color='red', alpha=0.25, hatch=None, label='None'):
         fig = None  # initialize fig to None
