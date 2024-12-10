@@ -1,0 +1,10 @@
+conda create -n cosmo -c conda-forge python=3.10 numpy scipy scikit-learn astropy numdifftools multiprocess corner emcee jupyter ipykernel
+pip install geneticalgorithm
+
+python3 -m pip install 'tensorflow[and-cuda]'
+# Verify the installation:
+python3 -c "import tensorflow as tf; print(tf.__version__)"
+python3 -c "import tensorflow as tf; print(tf.reduce_sum(tf.random.normal([1000, 1000])))"
+python3 -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
+
+python -m ipykernel install --user --name=cosmo --display-name "Python (cosmo)"
