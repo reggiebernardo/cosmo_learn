@@ -449,7 +449,7 @@ class CosmoLearn:
         self.mock_data['BrightSirens']=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
         return z_mock, y_mock, yerr_mock
 
-    def make_mock(self, mock_keys, pop_model='Pop III', years=3):
+    def make_mock(self, mock_keys, pop_model='Pop III', years=5):
         self.set_cosmo()
         for key in mock_keys:
             if key=='CosmicChronometers':
@@ -907,8 +907,6 @@ class CosmoLearn:
             return fig, ax
         else:
             return None  # no return when ax is passed   
-
-
 
     def show_trained_ml(self, ax=None, figsize=(10, 10), method='GP', \
                         n_sigma_rec=2, n_recz=100, color='red', alpha=0.25, hatch=None, label='None'):
