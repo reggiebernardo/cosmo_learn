@@ -1,4 +1,4 @@
-conda create -n cosmo -c conda-forge python=3.10 numpy scipy scikit-learn astropy numdifftools multiprocess corner emcee jupyter ipykernel
+conda create -n cosmo_learn -c conda-forge python=3.10 numpy scipy scikit-learn astropy numdifftools multiprocess corner emcee jupyter ipykernel
 pip install geneticalgorithm
 
 python3 -m pip install 'tensorflow[and-cuda]'

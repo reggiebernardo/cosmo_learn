@@ -34,6 +34,11 @@ kernels_sk = {'RBF': ConstantKernel()*RBF()+WhiteKernel(), \
 
 from .BRR_scikit import BRR_sk
 
+import tensorflow as tf
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.optimizers.legacy import Adam
+
 import corner
 
 from numpy.random import multivariate_normal as MN
@@ -489,7 +494,6 @@ class CosmoLearn:
                     Cosmo_Data['test']['y'] - self.cosmo_input(Cosmo_Data['test']['x'], key=Data_Key), 
                     yerr=Cosmo_Data['test']['yerr'], markersize=markersize, fmt=fmt_test, alpha=alpha)
 
-
     def show_mocks(self, ax=None, show_input=False, figsize=(10, 10), markersize=3, \
                    fmt_train='go', label_train='Training Set', fmt_test='ms', label_test='Test Set', \
                    fmt_input='k-', label_input='Input', alpha_all=0.7, alpha_sne=0.1):
@@ -797,39 +801,110 @@ class CosmoLearn:
         kernel=kernels_sk[kernel_key]
         GP_dict={}
         for key in self.mock_data.keys():
+            train_data=self.mock_data[key]['train']
+            x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
+            gp_cosmo = GaussianProcessRegressor(kernel = kernel, alpha = y[:, 1]**2, \
+                                                n_restarts_optimizer = n_restarts_optimizer)
             if key != 'SuperNovae':
-                train_data=self.mock_data[key]['train']
-                x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
-                gp_cosmo = GaussianProcessRegressor(kernel = kernel, alpha = y[:, 1]**2, \
-                                                    n_restarts_optimizer = n_restarts_optimizer)
                 gp_cosmo.fit(x.reshape(-1, 1), y[:, 0]);
-                GP_dict[key]=gp_cosmo
             if key == 'SuperNovae':
-                train_data=self.mock_data[key]['train']
-                x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
-                gp_cosmo = GaussianProcessRegressor(kernel = kernel, alpha = y[:, 1]**2, \
-                                                    n_restarts_optimizer = n_restarts_optimizer)
                 gp_cosmo.fit(np.log10(x).reshape(-1, 1), y[:, 0]);
-                GP_dict[key]=gp_cosmo
+            GP_dict[key]=gp_cosmo
         self.GP_dict=GP_dict
 
     def train_brr(self, n_order = 3):
         BRR_dict={}
         for key in self.mock_data.keys():
+            train_data=self.mock_data[key]['train']
+            x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
+            brr_cosmo = BRR_sk(n_order = n_order)
             if key != 'SuperNovae':
-                train_data=self.mock_data[key]['train']
-                x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
-                brr_cosmo = BRR_sk(n_order = n_order)
                 brr_cosmo.train(x, y[:, 0], y[:, 1]);
-                BRR_dict[key]=brr_cosmo
             if key == 'SuperNovae':
-                train_data=self.mock_data[key]['train']
-                x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
-                brr_cosmo = BRR_sk(n_order = n_order)
                 brr_cosmo.train(np.log10(x), y[:, 0], y[:, 1]);
-                BRR_dict[key]=brr_cosmo
+            BRR_dict[key]=brr_cosmo
         self.BRR_dict=BRR_dict
 
+    def init_ann(self, show_summary=False):
+        ann_arch={}
+        for key in self.mock_data.keys():
+            if key == 'CosmicChronometers' or key =='RedshiftSpaceDistorsions' \
+                or key == 'BaryonAcousticOscillations':
+                ann=tf.keras.Sequential([Dense(32, activation='relu', input_shape=[1], \
+                                               kernel_regularizer=tf.keras.regularizers.l2()), \
+                                         Dropout(0.1), \
+                                         Dense(64, activation='relu', \
+                                               kernel_regularizer=tf.keras.regularizers.l2()), \
+                                         Dropout(0.1), Dense(2),])
+                ann.compile(optimizer=Adam(learning_rate=0.001), loss=tf.keras.losses.MeanSquaredError())
+                ann_arch[key]=ann
+            if key == 'BrightSirens':
+                ann=tf.keras.Sequential([Dense(128, activation='relu', input_shape=[1], \
+                                               kernel_regularizer=tf.keras.regularizers.l2()), \
+                                         Dropout(0.1), \
+                                         Dense(128, activation='relu', \
+                                               kernel_regularizer=tf.keras.regularizers.l2()), \
+                                         Dropout(0.1), Dense(2),])
+                ann.compile(optimizer=Adam(learning_rate=0.001), loss=tf.keras.losses.MeanSquaredError())
+                ann_arch[key]=ann
+            if key == 'SuperNovae':
+                ann=tf.keras.Sequential([Dense(256, activation='relu', input_shape=[1], \
+                                               kernel_regularizer=tf.keras.regularizers.l2()), \
+                                         Dropout(0.1), \
+                                         Dense(512, activation='relu', \
+                                               kernel_regularizer=tf.keras.regularizers.l2()), \
+                                         Dropout(0.1), Dense(2),])
+                ann.compile(optimizer=Adam(learning_rate=0.00015), loss=tf.keras.losses.MeanSquaredError())
+                ann_arch[key]=ann
+
+        self.ANN_arch=ann_arch
+        if show_summary:
+            for key in self.mock_data.keys():
+                print(f'ANN-design for {key}')
+                self.ANN_arch[key].summary()
+                print()
+
+    def train_ann(self, use_early_stop=True, epochs=10000, validation_split=0.1, verbose=0, patience=1000):
+        ANN_dict={}
+        early_stop=None
+        if use_early_stop:
+            early_stop=EarlyStopping(patience=patience, restore_best_weights=True)
+        for key in self.mock_data.keys():
+            print(f'ANN training w/ {key} data')
+            train_data=self.mock_data[key]['train']
+            x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
+            ann_cosmo=self.ANN_arch[key]
+            if key != 'SuperNovae':
+                ann_cosmo.fit(x, y, epochs=epochs, validation_split=validation_split, \
+                              callbacks=[early_stop], verbose=verbose)                
+            if key == 'SuperNovae':
+                ann_cosmo.fit(np.log10(x), y, epochs=epochs, validation_split=validation_split, \
+                              callbacks=[early_stop], verbose=verbose)
+            ann_hist=ann_cosmo.history.history  
+            ANN_dict[key]={'ANN': ann_cosmo, 'loss': ann_hist['loss'], \
+                           'val_loss': ann_hist['val_loss']}
+        self.ANN_dict=ANN_dict
+
+    def show_ann_loss(self, ax=None, figsize=(10, 10)):
+        fig = None  # initialize fig to None
+        if ax is None:
+            fig, ax = plt.subplots(nrows=len(self.mock_data.keys()), figsize=figsize)
+        
+        for i, key in enumerate(self.mock_data.keys()):
+            n_epochs=len(self.ANN_dict[key]['loss'])
+            ax[i].plot(self.ANN_dict[key]['loss'], 'g-', alpha=0.7, label=f'Training')
+            ax[i].plot(self.ANN_dict[key]['val_loss'], '--', color='purple', alpha=0.7, label='Validation')
+            ax[i].set_yscale('log'); ax[i].set_xscale('log'); ax[i].set_ylabel(f'Loss')
+            ax[i].set_xlim(1, n_epochs); ax[i].legend(loc='lower left', prop={'size': 10})
+            ax[i].get_legend().set_title(f'{key}')
+
+        ax[-1].set_xlabel(r'Epoch')
+
+        # return fig and ax only if a new figure was created (i.e., if ax was None)
+        if fig is not None:
+            return fig, ax
+        else:
+            return None  # no return when ax is passed  
 
     #### 1.4 Show Best Fits
 
@@ -929,6 +1004,10 @@ class CosmoLearn:
                 rec_cosmo=self.BRR_dict[key]
                 _, func_mean, func_var = rec_cosmo.predict(x_rec).values()
                 func_err = np.sqrt(func_var)
+            if method=='ANN':
+                rec_cosmo=self.ANN_dict[key]['ANN']
+                func_rec = rec_cosmo.predict(x_rec)
+                func_mean = func_rec[:, 0]; func_err = func_rec[:, 1]
 
             if key!='BaryonAcousticOscillations':
                 if key != 'SuperNovae':
@@ -951,9 +1030,3 @@ class CosmoLearn:
         else:
             return None  # no return when ax is passed        
 
-
-
-
-# x_rec=np.linspace(min(x), max(x), 1000)
-# x_rec=np.linspace(np.log10(min(x)), np.log10(max(x)), 1000)
-# ymean_rec_gp, yerr_rec_gp = gp_cosmo.predict(x_rec.reshape(-1, 1), return_std=True)
