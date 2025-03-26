@@ -1,3 +1,10 @@
+# easy installation
+conda env create -f cosmo_learn.yml
+conda activate cosmo_learn
+python -m ipykernel install --user --name=cosmo --display-name "Python (cosmo)"
+
+
+# old school alternative
 conda create -n cosmo_learn -c conda-forge python=3.10 numpy scipy scikit-learn astropy numdifftools multiprocess corner emcee jupyter ipykernel
 pip install geneticalgorithm
 

@@ -9,6 +9,11 @@ Created on Mon Aug  5 10:53:00 2024
 # imports
 from math import pi, sqrt, atan, floor
 from scipy.misc import derivative
+
+# from scipy.differentiate import derivative
+# import numdifftools as nd
+# from numdifftools import Derivative
+
 import numpy as np
 from scipy.integrate import quad
 from scipy.optimize import fsolve
@@ -171,6 +176,19 @@ def sigma_photo(z):
 
 def error(z, dL, H, params):
     return sqrt(sigma_delens(z, dL, H, params)**2 + sigma_v(z, dL, H, params)**2 + sigma_LISA(z, dL, H, params)**2 + (derivative(dL, z, dx=1e-6, args=(H,params,)) * sigma_photo(z))**2)
+
+# def error(z, dL, H, params):
+#     # Compute the derivative using scipy.differentiate.derivative
+#     derivative_value = derivative(dL, z, args=(H, params), tolerances={'atol': 1e-6, 'rtol': 1e-6})
+    
+#     # Return the error calculation
+#     return sqrt(
+#         sigma_delens(z, dL, H, params)**2 +
+#         sigma_v(z, dL, H, params)**2 +
+#         sigma_LISA(z, dL, H, params)**2 +
+#         (derivative_value * sigma_photo(z))**2
+#     )
+
 
 #####
 

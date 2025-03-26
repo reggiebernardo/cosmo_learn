@@ -37,7 +37,8 @@ from .BRR_scikit import BRR_sk
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.optimizers.legacy import Adam
+# from tensorflow.keras.optimizers.legacy import Adam
+from tensorflow.keras.optimizers import Adam
 
 import corner
 
