@@ -12,8 +12,6 @@ dependencies:
   - corner
   - emcee
   - tqdm
-  - jupyter
-  - ipykernel
   - tensorflow
   - pip
   - pip:

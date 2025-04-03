@@ -249,7 +249,8 @@ def how_to_mock(z_real, yerr_real, cosmo_func):
     return z_real, y_mock, yerr_mock
 
 def create_whisker_plot(ax, means, uncertainties, colors, linestyles, markers, labels, \
-                        xlabel = r'$H_0$ [km s$^{-1}$ Mpc$^{-1}$]', reference_value=None):
+                        xlabel = r'$H_0$ [km s$^{-1}$ Mpc$^{-1}$]', reference_value=None, \
+                        linewidth=2, markersize=40, alpha=0.7):
     # fig, ax = plt.subplots(figsize=(8, 5))
 
     data = []
@@ -260,8 +261,10 @@ def create_whisker_plot(ax, means, uncertainties, colors, linestyles, markers, l
     for i, (method_data, linestyle, color, marker, label) in enumerate(zip(data, linestyles, colors, markers, labels)):
         mean_val = np.mean(method_data)
         conf_int = np.percentile(method_data, [16, 84])
-        ax.hlines(y=i + 1, xmin=conf_int[0], xmax=conf_int[1], colors=color, linewidth=2, linestyle=linestyle)
-        ax.scatter(mean_val, i + 1, color=color, marker=marker, s=100, label=label)
+        ax.hlines(y=i + 1, xmin=conf_int[0], xmax=conf_int[1], colors=color, \
+                  linewidth=linestyles, linestyle=linestyle, alpha=alpha)
+        ax.scatter(mean_val, i + 1, color=color, marker=marker, s=markersize, \
+                   label=label, alpha=alpha)
 
     if reference_value is not None:
         ax.axvline(x=reference_value, color='gray', linestyle=':')
@@ -561,7 +564,8 @@ class CosmoLearn:
 
     def show_mocks_and_residuals(self, ax=None, show_input=False, figsize=(10, 10), markersize=3, \
                                  fmt_train='go', label_train='Training Set', fmt_test='ms', label_test='Test Set', \
-                                 ls_input='-', color_input='k', label_input='Input', alpha_all=0.7, alpha_sne=0.1):
+                                 ls_input='-', color_input='k', label_input='Input', alpha_all=0.7, alpha_sne=0.1, \
+                                 input_zorder=1000000):
         fig = None  # initialize fig to None
         if ax is None:
             fig, ax = plt.subplots(nrows=len(self.mock_data.keys()), ncols=2, figsize=figsize)
@@ -664,7 +668,8 @@ class CosmoLearn:
                 if show_input:
                     x_train=self.mock_data[key]['train']['x']
                     x_space=np.linspace(min(x_train), max(x_train))
-                    ax[i,1].axhline(0, ls=ls_input, color=color_input, alpha=alpha_all)
+                    ax[i,1].axhline(0, ls=ls_input, color=color_input, \
+                                    alpha=alpha_all, zorder=input_zorder)
                 ax[i,1].yaxis.tick_right()
 
         ax[-1,0].set_xlabel(r'Redshift $z$'); ax[-1,1].set_xlabel(r'Redshift $z$')
@@ -984,7 +989,7 @@ class CosmoLearn:
         else:
             return None  # no return when ax is passed   
 
-    def show_trained_ml(self, ax=None, figsize=(10, 10), method='GP', \
+    def show_trained_ml(self, ax=None, figsize=(10, 10), method='GP', rasterized=False, \
                         n_sigma_rec=2, n_recz=100, color='red', alpha=0.25, hatch=None, label='None'):
         fig = None  # initialize fig to None
         if ax is None:
@@ -1013,15 +1018,18 @@ class CosmoLearn:
             if key!='BaryonAcousticOscillations':
                 if key != 'SuperNovae':
                     ax[i].fill_between(x_rec, func_mean-n_sigma_rec*func_err, func_mean+n_sigma_rec*func_err, \
-                                       facecolor=color, edgecolor=color, alpha=alpha, hatch=hatch, label=label)
+                                       facecolor=color, edgecolor=color, alpha=alpha, hatch=hatch, label=label, \
+                                       rasterized=rasterized)
                 if key == 'SuperNovae':
                     ax[i].fill_between(10**x_rec, func_mean-n_sigma_rec*func_err, func_mean+n_sigma_rec*func_err, \
-                                       facecolor=color, edgecolor=color, alpha=alpha, hatch=hatch, label=label)
+                                       facecolor=color, edgecolor=color, alpha=alpha, hatch=hatch, label=label, \
+                                       rasterized=rasterized)
             if key=='BaryonAcousticOscillations':
                 ax[i].fill_between(x_rec, \
                                    (func_mean-n_sigma_rec*func_err)/(x_rec**(2/3)), \
                                    (func_mean+n_sigma_rec*func_err)/(x_rec**(2/3)), \
-                                   facecolor=color, edgecolor=color, alpha=alpha, hatch=hatch, label=label)
+                                   facecolor=color, edgecolor=color, alpha=alpha, hatch=hatch, label=label, \
+                                   rasterized=rasterized)
 
         ax[-1].set_xlabel(r'Redshift $z$')
 
