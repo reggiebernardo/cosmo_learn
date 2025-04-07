@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
 
     # make best fit plot
-    fig, ax=my_cosmo_learn.show_mocks(show_input=False)
+    fig, ax=my_cosmo_learn.show_mocks(show_input=True)
     my_cosmo_learn.show_bestfit_curve(ax=ax, method='MCMC', label='MCMC', color='pink')
     my_cosmo_learn.show_bestfit_curve(ax=ax, method='GAFisher', color='orange', alpha=0.15, hatch='|', label='GA-Fisher')
 

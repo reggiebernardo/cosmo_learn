@@ -26,7 +26,7 @@ if __name__ == '__main__':
     plt.show()
 
     # plots results
-    fig, ax=my_cosmo_learn.show_mocks(show_input=False)
+    fig, ax=my_cosmo_learn.show_mocks(show_input=True)
     my_cosmo_learn.show_trained_ml(ax=ax, method='ANN', color='darkgreen', alpha=0.15, hatch='x', label='ANN')
 
     [ax[i].grid(True, alpha=0.25) for i in range(len(my_cosmo_learn.mock_data.keys()))]

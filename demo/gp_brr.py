@@ -22,7 +22,7 @@ if __name__ == '__main__':
     my_cosmo_learn.train_brr()
 
     # plots results
-    fig, ax=my_cosmo_learn.show_mocks(show_input=False)
+    fig, ax=my_cosmo_learn.show_mocks(show_input=True)
     my_cosmo_learn.show_trained_ml(ax=ax, method='GP', label='GP', \
                                    hatch='\\', rasterized=True)
     my_cosmo_learn.show_trained_ml(ax=ax, method='BRR', label='BRR', \
