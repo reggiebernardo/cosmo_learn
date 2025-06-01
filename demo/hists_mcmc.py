@@ -41,6 +41,9 @@ def plot_hists_mcmc(sim_indices=range(1), savefig=False, fname='hists_mcmc'):
     s8_samples_rs=my_cosmo_learn.mcmc_samples[:, 3]
     rd_samples_rs=my_cosmo_learn.mcmc_samples[:, 4]
 
+    # initialize stacked samples
+    all_H0, all_Om0, all_w0, all_s8, all_rd = [], [], [], [], []
+
     color_rep='red'
     ax[0].hist(H0_samples_rs, bins=20, density=True, alpha=0.7, histtype='step', color=color_rep, lw=3)
     ax[1].hist(Om0_samples_rs, bins=20, density=True, alpha=0.7, histtype='step', color=color_rep, lw=3)
@@ -63,12 +66,33 @@ def plot_hists_mcmc(sim_indices=range(1), savefig=False, fname='hists_mcmc'):
         s8_samples_rs=my_cosmo_learn.mcmc_samples[:, 3]
         rd_samples_rs=my_cosmo_learn.mcmc_samples[:, 4]
 
+        # append to the global lists
+        all_H0.append(H0_samples_rs)
+        all_Om0.append(Om0_samples_rs)
+        all_w0.append(w0_samples_rs)
+        all_s8.append(s8_samples_rs)
+        all_rd.append(rd_samples_rs)
+
         color_ens='blue'
         ax[0].hist(H0_samples_rs, bins=20, density=True, alpha=0.1, histtype='step', color=color_ens, lw=2)
         ax[1].hist(Om0_samples_rs, bins=20, density=True, alpha=0.1, histtype='step', color=color_ens, lw=2)
         ax[2].hist(w0_samples_rs, bins=20, density=True, alpha=0.1, histtype='step', color=color_ens, lw=2)
         ax[3].hist(s8_samples_rs, bins=20, density=True, alpha=0.1, histtype='step', color=color_ens, lw=2)
         ax[4].hist(rd_samples_rs, bins=20, density=True, alpha=0.1, histtype='step', color=color_ens, lw=2)
+
+    # Concatenate all samples for stacked posterior
+    H0_all = np.concatenate(all_H0)
+    Om0_all = np.concatenate(all_Om0)
+    w0_all  = np.concatenate(all_w0)
+    s8_all  = np.concatenate(all_s8)
+    rd_all  = np.concatenate(all_rd)
+
+    # plot stacked posteriors (in black, bold)
+    ax[0].hist(H0_all, bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=2.5)
+    ax[1].hist(Om0_all, bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=2.5)
+    ax[2].hist(w0_all,  bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=2.5)
+    ax[3].hist(s8_all,  bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=2.5)
+    ax[4].hist(rd_all,  bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=2.5)
 
     ax[0].axvline(x=H0, ls='--', color='black', lw=2, alpha=0.5)
     ax[1].axvline(x=Om0, ls='--', color='black', lw=2, alpha=0.5)
@@ -79,7 +103,7 @@ def plot_hists_mcmc(sim_indices=range(1), savefig=False, fname='hists_mcmc'):
     ax[0].set_xlabel(r'$H_0$ [km/s/Mpc]'); ax[0].set_ylabel(r'$P(H_0)$')
     ax[1].set_xlabel(r'$\Omega_m$'); ax[1].set_ylabel(r'$P(\Omega_{m0})$')
     ax[2].set_xlabel(r'$w$'); ax[2].set_ylabel(r'$P(w)$')
-    ax[3].set_xlabel(r'$\sigma_8$'); ax[3].set_ylabel(r'$P(\sigma_8)$')
+    ax[3].set_xlabel(r'$S_8$'); ax[3].set_ylabel(r'$P(S_8)$')
     ax[4].set_xlabel(r'$r_{\rm D}$ [Mpc]'); ax[4].set_ylabel(r'$P(r_{\rm D})$')
 
     fig.subplots_adjust(hspace=0.4)
@@ -91,5 +115,5 @@ def plot_hists_mcmc(sim_indices=range(1), savefig=False, fname='hists_mcmc'):
 
 
 if __name__ == '__main__':
-    plot_hists_mcmc(sim_indices=np.arange(0, 100, 1), savefig=True, fname='hists_mcmc')
+    plot_hists_mcmc(sim_indices=np.arange(0, 1, 1), savefig=True, fname='hists_mcmc_test')
 
