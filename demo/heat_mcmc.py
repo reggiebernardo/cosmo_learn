@@ -49,7 +49,7 @@ def plot_heatmap_mcmc(sim_indices=np.arange(100), savefig=True, fname='heatmap_m
             llprob=llprob,
             p0=[70, 0.3, -1, 0.8, 147],
             nburn=100,
-            nmcmc=2000
+            nmcmc=4000 # 2000
         )
 
         samples = cosmo.mcmc_samples  # shape: (n_samples, 5)
@@ -97,4 +97,5 @@ def plot_heatmap_mcmc(sim_indices=np.arange(100), savefig=True, fname='heatmap_m
     print(f"Execution time: {time.time() - start_time:.2f} seconds")
 
 if __name__ == '__main__':
-    plot_heatmap_mcmc(sim_indices=np.arange(0, 100, 1), savefig=True, fname='heatmap_mcmc')
+    # plot_heatmap_mcmc(sim_indices=np.arange(0, 100, 1), savefig=True, fname='heatmap_mcmc')
+    plot_heatmap_mcmc(sim_indices=np.arange(0, 100, 1), savefig=True, fname='heat_mcmc_4000')
