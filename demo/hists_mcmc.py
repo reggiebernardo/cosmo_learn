@@ -88,11 +88,11 @@ def plot_hists_mcmc(sim_indices=range(1), savefig=False, fname='hists_mcmc'):
     rd_all  = np.concatenate(all_rd)
 
     # plot stacked posteriors (in black, bold)
-    ax[0].hist(H0_all, bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=5)
-    ax[1].hist(Om0_all, bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=5)
-    ax[2].hist(w0_all,  bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=5)
-    ax[3].hist(s8_all,  bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=5)
-    ax[4].hist(rd_all,  bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=5)
+    ax[0].hist(H0_all, bins=20, density=True, alpha=1.0, histtype='step', color='green', lw=10)
+    ax[1].hist(Om0_all, bins=20, density=True, alpha=1.0, histtype='step', color='green', lw=10)
+    ax[2].hist(w0_all,  bins=20, density=True, alpha=1.0, histtype='step', color='green', lw=10)
+    ax[3].hist(s8_all,  bins=20, density=True, alpha=1.0, histtype='step', color='green', lw=10)
+    ax[4].hist(rd_all,  bins=20, density=True, alpha=1.0, histtype='step', color='green', lw=10)
 
     ax[0].axvline(x=H0, ls='--', color='black', lw=2, alpha=0.5)
     ax[1].axvline(x=Om0, ls='--', color='black', lw=2, alpha=0.5)
