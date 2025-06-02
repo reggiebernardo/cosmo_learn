@@ -24,7 +24,7 @@ def plot_hists_mcmc(sim_indices=range(1), savefig=False, fname='hists_mcmc'):
     rd_fid_prior={'mu': 147.46, 'sigma': 0.28}
 
     # MCMC parameters
-    nwalkers=15; dres=[0.05, 0.005, 0.01, 0.01, 0.005]; nburn=100; nmcmc=2000
+    nwalkers=15; dres=[0.05, 0.005, 0.01, 0.01, 0.005]; nburn=100; nmcmc=4000
 
     fig, ax=plt.subplots(figsize=(10,10), nrows=5)
 
@@ -88,11 +88,11 @@ def plot_hists_mcmc(sim_indices=range(1), savefig=False, fname='hists_mcmc'):
     rd_all  = np.concatenate(all_rd)
 
     # plot stacked posteriors (in black, bold)
-    ax[0].hist(H0_all, bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=2.5)
-    ax[1].hist(Om0_all, bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=2.5)
-    ax[2].hist(w0_all,  bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=2.5)
-    ax[3].hist(s8_all,  bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=2.5)
-    ax[4].hist(rd_all,  bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=2.5)
+    ax[0].hist(H0_all, bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=5)
+    ax[1].hist(Om0_all, bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=5)
+    ax[2].hist(w0_all,  bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=5)
+    ax[3].hist(s8_all,  bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=5)
+    ax[4].hist(rd_all,  bins=20, density=True, alpha=0.8, histtype='step', color='green', lw=5)
 
     ax[0].axvline(x=H0, ls='--', color='black', lw=2, alpha=0.5)
     ax[1].axvline(x=Om0, ls='--', color='black', lw=2, alpha=0.5)
@@ -115,5 +115,6 @@ def plot_hists_mcmc(sim_indices=range(1), savefig=False, fname='hists_mcmc'):
 
 
 if __name__ == '__main__':
-    plot_hists_mcmc(sim_indices=np.arange(0, 1, 1), savefig=True, fname='hists_mcmc_test')
+    n_sims=100
+    plot_hists_mcmc(sim_indices=np.arange(0, n_sims, 1), savefig=True, fname=f'hists_mcmc_{n_sims}')
 
