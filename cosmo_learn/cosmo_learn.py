@@ -34,11 +34,13 @@ kernels_sk = {'RBF': ConstantKernel()*RBF()+WhiteKernel(), \
 
 from .BRR_scikit import BRR_sk
 
-import tensorflow as tf
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.callbacks import EarlyStopping
-# from tensorflow.keras.optimizers.legacy import Adam
-from tensorflow.keras.optimizers import Adam
+# import tensorflow as tf
+# from tensorflow.keras.layers import Dense, Dropout
+# from tensorflow.keras.callbacks import EarlyStopping
+# # from tensorflow.keras.optimizers.legacy import Adam
+# from tensorflow.keras.optimizers import Adam
+
+import refann as rf
 
 import corner
 
