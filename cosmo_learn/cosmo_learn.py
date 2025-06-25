@@ -833,65 +833,151 @@ class CosmoLearn:
             BRR_dict[key]=brr_cosmo
         self.BRR_dict=BRR_dict
 
-    def init_ann(self, show_summary=False):
-        ann_arch={}
-        for key in self.mock_data.keys():
-            if key == 'CosmicChronometers' or key =='RedshiftSpaceDistorsions' \
-                or key == 'BaryonAcousticOscillations':
-                ann=tf.keras.Sequential([Dense(32, activation='relu', input_shape=[1], \
-                                               kernel_regularizer=tf.keras.regularizers.l2()), \
-                                         Dropout(0.1), \
-                                         Dense(64, activation='relu', \
-                                               kernel_regularizer=tf.keras.regularizers.l2()), \
-                                         Dropout(0.1), Dense(2),])
-                ann.compile(optimizer=Adam(learning_rate=0.001), loss=tf.keras.losses.MeanSquaredError())
-                ann_arch[key]=ann
-            if key == 'BrightSirens':
-                ann=tf.keras.Sequential([Dense(128, activation='relu', input_shape=[1], \
-                                               kernel_regularizer=tf.keras.regularizers.l2()), \
-                                         Dropout(0.1), \
-                                         Dense(128, activation='relu', \
-                                               kernel_regularizer=tf.keras.regularizers.l2()), \
-                                         Dropout(0.1), Dense(2),])
-                ann.compile(optimizer=Adam(learning_rate=0.001), loss=tf.keras.losses.MeanSquaredError())
-                ann_arch[key]=ann
-            if key == 'SuperNovae':
-                ann=tf.keras.Sequential([Dense(256, activation='relu', input_shape=[1], \
-                                               kernel_regularizer=tf.keras.regularizers.l2()), \
-                                         Dropout(0.1), \
-                                         Dense(512, activation='relu', \
-                                               kernel_regularizer=tf.keras.regularizers.l2()), \
-                                         Dropout(0.1), Dense(2),])
-                ann.compile(optimizer=Adam(learning_rate=0.00015), loss=tf.keras.losses.MeanSquaredError())
-                ann_arch[key]=ann
+    # def init_ann(self, show_summary=False):
+    #     ann_arch={}
+    #     for key in self.mock_data.keys():
+    #         if key == 'CosmicChronometers' or key =='RedshiftSpaceDistorsions' \
+    #             or key == 'BaryonAcousticOscillations':
+    #             ann=tf.keras.Sequential([Dense(32, activation='relu', input_shape=[1], \
+    #                                            kernel_regularizer=tf.keras.regularizers.l2()), \
+    #                                      Dropout(0.1), \
+    #                                      Dense(64, activation='relu', \
+    #                                            kernel_regularizer=tf.keras.regularizers.l2()), \
+    #                                      Dropout(0.1), Dense(2),])
+    #             ann.compile(optimizer=Adam(learning_rate=0.001), loss=tf.keras.losses.MeanSquaredError())
+    #             ann_arch[key]=ann
+    #         if key == 'BrightSirens':
+    #             ann=tf.keras.Sequential([Dense(128, activation='relu', input_shape=[1], \
+    #                                            kernel_regularizer=tf.keras.regularizers.l2()), \
+    #                                      Dropout(0.1), \
+    #                                      Dense(128, activation='relu', \
+    #                                            kernel_regularizer=tf.keras.regularizers.l2()), \
+    #                                      Dropout(0.1), Dense(2),])
+    #             ann.compile(optimizer=Adam(learning_rate=0.001), loss=tf.keras.losses.MeanSquaredError())
+    #             ann_arch[key]=ann
+    #         if key == 'SuperNovae':
+    #             ann=tf.keras.Sequential([Dense(256, activation='relu', input_shape=[1], \
+    #                                            kernel_regularizer=tf.keras.regularizers.l2()), \
+    #                                      Dropout(0.1), \
+    #                                      Dense(512, activation='relu', \
+    #                                            kernel_regularizer=tf.keras.regularizers.l2()), \
+    #                                      Dropout(0.1), Dense(2),])
+    #             ann.compile(optimizer=Adam(learning_rate=0.00015), loss=tf.keras.losses.MeanSquaredError())
+    #             ann_arch[key]=ann
 
-        self.ANN_arch=ann_arch
+    #     self.ANN_arch=ann_arch
+    #     if show_summary:
+    #         for key in self.mock_data.keys():
+    #             print(f'ANN-design for {key}')
+    #             self.ANN_arch[key].summary()
+    #             print()
+
+    def init_ann(self, mid_node = 4096, hidden_layer = 1, hp_model = 'rec_1', iteration=30000, print_info = False, show_summary = False):
+        ann={}
+        for key in self.mock_data.keys():
+            train_data=self.mock_data[key]['train']
+            if key != 'SuperNovae': 
+                data=np.column_stack((train_data['x'], train_data['y'], train_data['yerr']))
+            if key == 'SuperNovae':
+                data=np.column_stack((np.log10(train_data['x']), train_data['y'], train_data['yerr']))
+                
+            ann_cosmo = rf.ANN(data, mid_node=mid_node, hidden_layer=hidden_layer, hp_model=hp_model)
+            ann_cosmo.print_info = print_info
+            ann_cosmo.iteration = iteration
+            ann[key]=ann_cosmo
+
+        self.ANN=ann
+
         if show_summary:
             for key in self.mock_data.keys():
                 print(f'ANN-design for {key}')
-                self.ANN_arch[key].summary()
+                ann=self.ANN[key]
+                print('mid node:', ann.mid_node, 
+                      'hidden layer:', ann.hidden_layer, 
+                      'hp model:', ann.hp_model, 
+                      'n_epochs:', ann.iteration,
+                      'learning rate:', ann.lr,
+                      'minimum learning rate:', ann.lr_min,
+                      'max batch size:', ann.batch_size_max)
                 print()
 
-    def train_ann(self, use_early_stop=True, epochs=10000, validation_split=0.1, verbose=0, patience=1000):
-        ANN_dict={}
-        early_stop=None
-        if use_early_stop:
-            early_stop=EarlyStopping(patience=patience, restore_best_weights=True)
+    def show_ann_summary(self, key=None):
+        if key is None:
+            for key in self.ANN.keys():
+                print(f'ANN-design for {key}')
+                ann=self.ANN[key]
+                print('mid node:', ann.mid_node, 
+                      'hidden layer:', ann.hidden_layer, 
+                      'hp model:', ann.hp_model, 
+                      'n_epochs:', ann.iteration,
+                      'learning rate:', ann.lr,
+                      'minimum learning rate:', ann.lr_min,
+                      'max batch size:', ann.batch_size_max)
+                print()
+        else:
+            if key in self.ANN.keys():
+                ann=self.ANN[key]
+                print('mid node:', ann.mid_node, 
+                      'hidden layer:', ann.hidden_layer, 
+                      'hp model:', ann.hp_model, 
+                      'n_epochs:', ann.iteration,
+                      'learning rate:', ann.lr,
+                      'minimum learning rate:', ann.lr_min,
+                      'max batch size:', ann.batch_size_max)
+            else:
+                print(f'ANN with key {key} not found.')
+
+    # def train_ann(self, use_early_stop=True, epochs=10000, validation_split=0.1, verbose=0, patience=1000):
+    #     ANN_dict={}
+    #     early_stop=None
+    #     if use_early_stop:
+    #         early_stop=EarlyStopping(patience=patience, restore_best_weights=True)
+    #     for key in self.mock_data.keys():
+    #         print(f'ANN training w/ {key} data')
+    #         train_data=self.mock_data[key]['train']
+    #         x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
+    #         ann_cosmo=self.ANN_arch[key]
+    #         if key != 'SuperNovae':
+    #             ann_cosmo.fit(x, y, epochs=epochs, validation_split=validation_split, \
+    #                           callbacks=[early_stop], verbose=verbose)                
+    #         if key == 'SuperNovae':
+    #             ann_cosmo.fit(np.log10(x), y, epochs=epochs, validation_split=validation_split, \
+    #                           callbacks=[early_stop], verbose=verbose)
+    #         ann_hist=ann_cosmo.history.history  
+    #         ANN_dict[key]={'ANN': ann_cosmo, 'loss': ann_hist['loss'], \
+    #                        'val_loss': ann_hist['val_loss']}
+    #     self.ANN_dict=ANN_dict
+
+    def train_ann(self):
+        ann=self.ANN
+        # ANN_dict={}
         for key in self.mock_data.keys():
             print(f'ANN training w/ {key} data')
-            train_data=self.mock_data[key]['train']
-            x=train_data['x']; y=np.column_stack((train_data['y'], train_data['yerr']))
-            ann_cosmo=self.ANN_arch[key]
-            if key != 'SuperNovae':
-                ann_cosmo.fit(x, y, epochs=epochs, validation_split=validation_split, \
-                              callbacks=[early_stop], verbose=verbose)                
-            if key == 'SuperNovae':
-                ann_cosmo.fit(np.log10(x), y, epochs=epochs, validation_split=validation_split, \
-                              callbacks=[early_stop], verbose=verbose)
-            ann_hist=ann_cosmo.history.history  
-            ANN_dict[key]={'ANN': ann_cosmo, 'loss': ann_hist['loss'], \
-                           'val_loss': ann_hist['val_loss']}
-        self.ANN_dict=ANN_dict
+            ann_cosmo=ann[key]
+            ann_cosmo.train()   
+        #     ANN_dict[key]={'ANN': ann_cosmo, 'loss': ann_cosmo.loss, 'n_epochs': ann_cosmo.iteration}
+        # self.ANN_dict=ANN_dict
+
+    # def show_ann_loss(self, ax=None, figsize=(10, 10)):
+    #     fig = None  # initialize fig to None
+    #     if ax is None:
+    #         fig, ax = plt.subplots(nrows=len(self.mock_data.keys()), figsize=figsize)
+        
+    #     for i, key in enumerate(self.mock_data.keys()):
+    #         n_epochs=len(self.ANN_dict[key]['loss'])
+    #         ax[i].plot(self.ANN_dict[key]['loss'], 'g-', alpha=0.7, label=f'Training')
+    #         ax[i].plot(self.ANN_dict[key]['val_loss'], '--', color='purple', alpha=0.7, label='Validation')
+    #         ax[i].set_yscale('log'); ax[i].set_xscale('log'); ax[i].set_ylabel(f'Loss')
+    #         ax[i].set_xlim(1, n_epochs); ax[i].legend(loc='lower left', prop={'size': 10})
+    #         ax[i].get_legend().set_title(f'{key}')
+
+    #     ax[-1].set_xlabel(r'Epoch')
+
+    #     # return fig and ax only if a new figure was created (i.e., if ax was None)
+    #     if fig is not None:
+    #         return fig, ax
+    #     else:
+    #         return None  # no return when ax is passed  
 
     def show_ann_loss(self, ax=None, figsize=(10, 10)):
         fig = None  # initialize fig to None
@@ -899,9 +985,9 @@ class CosmoLearn:
             fig, ax = plt.subplots(nrows=len(self.mock_data.keys()), figsize=figsize)
         
         for i, key in enumerate(self.mock_data.keys()):
-            n_epochs=len(self.ANN_dict[key]['loss'])
-            ax[i].plot(self.ANN_dict[key]['loss'], 'g-', alpha=0.7, label=f'Training')
-            ax[i].plot(self.ANN_dict[key]['val_loss'], '--', color='purple', alpha=0.7, label='Validation')
+            ann_cosmo=self.ANN[key]
+            n_epochs=ann_cosmo.iteration
+            ax[i].plot(range(n_epochs), ann_cosmo.loss, 'g-', alpha=0.7)
             ax[i].set_yscale('log'); ax[i].set_xscale('log'); ax[i].set_ylabel(f'Loss')
             ax[i].set_xlim(1, n_epochs); ax[i].legend(loc='lower left', prop={'size': 10})
             ax[i].get_legend().set_title(f'{key}')
@@ -1013,9 +1099,10 @@ class CosmoLearn:
                 _, func_mean, func_var = rec_cosmo.predict(x_rec).values()
                 func_err = np.sqrt(func_var)
             if method=='ANN':
-                rec_cosmo=self.ANN_dict[key]['ANN']
+                # rec_cosmo=self.ANN_dict[key]['ANN']
+                rec_cosmo=self.ANN[key]
                 func_rec = rec_cosmo.predict(x_rec)
-                func_mean = func_rec[:, 0]; func_err = func_rec[:, 1]
+                func_mean = func_rec[:, 1]; func_err = func_rec[:, 2]
 
             if key!='BaryonAcousticOscillations':
                 if key != 'SuperNovae':
@@ -1026,6 +1113,7 @@ class CosmoLearn:
                     ax[i].fill_between(10**x_rec, func_mean-n_sigma_rec*func_err, func_mean+n_sigma_rec*func_err, \
                                        facecolor=color, edgecolor=color, alpha=alpha, hatch=hatch, label=label, \
                                        rasterized=rasterized)
+                    
             if key=='BaryonAcousticOscillations':
                 ax[i].fill_between(x_rec, \
                                    (func_mean-n_sigma_rec*func_err)/(x_rec**(2/3)), \
