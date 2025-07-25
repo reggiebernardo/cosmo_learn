@@ -49,6 +49,8 @@ from numpy.random import multivariate_normal as MN
 
 from .metrics import *
 
+import time
+
 
 # 0 IMPORT/SETUP REAL DATA
 
@@ -1010,9 +1012,16 @@ class CosmoLearn:
         ann=self.ANN
         # ANN_dict={}
         for key in self.mock_data.keys():
-            print(f'ANN training w/ {key} data')
-            ann_cosmo=ann[key]
-            ann_cosmo.train()   
+            # print(f'ANN training w/ {key} data')
+            # ann_cosmo=ann[key]
+            # ann_cosmo.train()   
+
+            start_time = time.time()
+            ann_cosmo = ann[key]
+            ann_cosmo.train()
+            end_time = time.time()
+            duration = end_time - start_time
+            print(f'ANN training w/ {key} data completed in {duration:.2f} seconds')
         #     ANN_dict[key]={'ANN': ann_cosmo, 'loss': ann_cosmo.loss, 'n_epochs': ann_cosmo.iteration}
         # self.ANN_dict=ANN_dict
 
