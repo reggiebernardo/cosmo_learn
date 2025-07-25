@@ -932,8 +932,9 @@ class CosmoLearn:
     #             self.ANN_arch[key].summary()
     #             print()
 
-    def init_ann(self, mid_node = 4096, hidden_layer = 1, hp_model = 'rec_1', iteration=30000, print_info = False, show_summary = False):
-        ann={}
+    def init_ann(self, mid_node = 4096, hidden_layer = 1, hp_model = 'rec_1', \
+                 loss_func='L1', iteration=30000, print_info = False, show_summary = False):
+        ANN_dict={}
         for key in self.mock_data.keys():
             train_data=self.mock_data[key]['train']
             if key != 'SuperNovae': 
@@ -941,20 +942,22 @@ class CosmoLearn:
             if key == 'SuperNovae':
                 data=np.column_stack((np.log10(train_data['x']), train_data['y'], train_data['yerr']))
                 
-            ann_cosmo = rf.ANN(data, mid_node=mid_node, hidden_layer=hidden_layer, hp_model=hp_model)
+            ann_cosmo = rf.ANN(data, mid_node=mid_node, hidden_layer=hidden_layer, \
+                               hp_model=hp_model, loss_func=loss_func)
             ann_cosmo.print_info = print_info
             ann_cosmo.iteration = iteration
-            ann[key]=ann_cosmo
+            ANN_dict[key]=ann_cosmo
 
-        self.ANN=ann
+        self.ANN_dict=ANN_dict
 
         if show_summary:
             for key in self.mock_data.keys():
                 print(f'ANN-design for {key}')
-                ann=self.ANN[key]
+                ann=self.ANN_dict[key]
                 print('mid node:', ann.mid_node, 
                       'hidden layer:', ann.hidden_layer, 
-                      'hp model:', ann.hp_model, 
+                      'hp model:', ann.hp_model,
+                      'loss function:', ann.loss_func,
                       'n_epochs:', ann.iteration,
                       'learning rate:', ann.lr,
                       'minimum learning rate:', ann.lr_min,
@@ -963,23 +966,25 @@ class CosmoLearn:
 
     def show_ann_summary(self, key=None):
         if key is None:
-            for key in self.ANN.keys():
+            for key in self.ANN_dict.keys():
                 print(f'ANN-design for {key}')
-                ann=self.ANN[key]
+                ann=self.ANN_dict[key]
                 print('mid node:', ann.mid_node, 
                       'hidden layer:', ann.hidden_layer, 
                       'hp model:', ann.hp_model, 
+                      'loss function:', ann.loss_func,
                       'n_epochs:', ann.iteration,
                       'learning rate:', ann.lr,
                       'minimum learning rate:', ann.lr_min,
                       'max batch size:', ann.batch_size_max)
                 print()
         else:
-            if key in self.ANN.keys():
-                ann=self.ANN[key]
+            if key in self.ANN_dict.keys():
+                ann=self.ANN_dict[key]
                 print('mid node:', ann.mid_node, 
                       'hidden layer:', ann.hidden_layer, 
                       'hp model:', ann.hp_model, 
+                      'loss function:', ann.loss_func,
                       'n_epochs:', ann.iteration,
                       'learning rate:', ann.lr,
                       'minimum learning rate:', ann.lr_min,
@@ -1009,7 +1014,7 @@ class CosmoLearn:
     #     self.ANN_dict=ANN_dict
 
     def train_ann(self):
-        ann=self.ANN
+        ann=self.ANN_dict
         # ANN_dict={}
         for key in self.mock_data.keys():
             # print(f'ANN training w/ {key} data')
@@ -1052,7 +1057,7 @@ class CosmoLearn:
             fig, ax = plt.subplots(nrows=len(self.mock_data.keys()), figsize=figsize)
         
         for i, key in enumerate(self.mock_data.keys()):
-            ann_cosmo=self.ANN[key]
+            ann_cosmo=self.ANN_dict[key]
             n_epochs=ann_cosmo.iteration
             ax[i].plot(range(n_epochs), ann_cosmo.loss, 'g-', alpha=0.7)
             ax[i].set_yscale('log'); ax[i].set_xscale('log'); ax[i].set_ylabel(f'Loss')
@@ -1167,7 +1172,7 @@ class CosmoLearn:
                 func_err = np.sqrt(func_var)
             if method=='ANN':
                 # rec_cosmo=self.ANN_dict[key]['ANN']
-                rec_cosmo=self.ANN[key]
+                rec_cosmo=self.ANN_dict[key]
                 func_rec = rec_cosmo.predict(x_rec)
                 func_mean = func_rec[:, 1]; func_err = func_rec[:, 2]
 
