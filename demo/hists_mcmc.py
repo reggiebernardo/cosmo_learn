@@ -116,5 +116,5 @@ def plot_hists_mcmc(sim_indices=range(1), savefig=False, fname='hists_mcmc'):
 
 if __name__ == '__main__':
     n_sims=100
-    plot_hists_mcmc(sim_indices=np.arange(0, n_sims, 1), savefig=True, fname=f'hists_mcmc_{n_sims}')
+    plot_hists_mcmc(sim_indices=np.arange(0, n_sims, 1), savefig=True, fname=f'hists_mcmc')
 

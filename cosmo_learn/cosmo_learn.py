@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .LISA_bright_sirens import generate
+from .LISA_bright import generate
 from astropy.cosmology import w0waCDM
 from scipy.special import hyp2f1
 # from scipy.linalg import block_diag
