@@ -1,2 +1,7 @@
 # one-line installation
 conda env create -f cosmo_learn.yml
+
+# test run in terminal
+conda activate cosmo_learn
+python minimal_example.py
+

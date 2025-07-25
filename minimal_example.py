@@ -9,7 +9,7 @@ if __name__ == "__main__":
     # desi1 Flat wCDM https://arxiv.org/pdf/2404.03002 + planck s8
     H0, Om0, w0, s8 = 67.74, 0.3095, -0.997, 0.834
     my_cosmo_learn=CosmoLearn([H0, Om0, w0, s8], seed=14000605)
-    mock_keys=['CosmicChronometers', 'SuperNovae', 'BrightSirens', 'RedshiftSpaceDistorsions']
+    mock_keys=['CosmicChronometers', 'SuperNovae', 'BaryonAcousticOscillations', 'BrightSirens', 'RedshiftSpaceDistorsions']
     my_cosmo_learn.make_mock(mock_keys=mock_keys)
 
     # 1 TRAINING
@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     # ann
     my_cosmo_learn.init_ann()
-    my_cosmo_learn.train_ann(verbose=0)
+    my_cosmo_learn.train_ann()
 
     # mcmc
     prior_dict={'H0_min': 0, 'H0_max': 100, 'Om0_min': 0, 'Om0_max': 1, \
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     # 2 SHOW RESULTS
     # gp and brr reconstruction
-    fig, ax=my_cosmo_learn.show_mocks(show_input=False)
+    fig, ax=my_cosmo_learn.show_mocks(show_input=True)
     my_cosmo_learn.show_trained_ml(ax=ax, method='GP', label='GP')
     my_cosmo_learn.show_trained_ml(ax=ax, method='BRR', color='blue', alpha=0.15, hatch='|', label='BRR')
     [ax[i].grid(True, alpha=0.25) for i in range(len(my_cosmo_learn.mock_data.keys()))]
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     plt.show()
 
     # ann reconstruction
-    fig, ax=my_cosmo_learn.show_mocks(show_input=False)
+    fig, ax=my_cosmo_learn.show_mocks(show_input=True)
     my_cosmo_learn.show_trained_ml(ax=ax, method='ANN', color='darkgreen', alpha=0.15, hatch='x', label='ANN')
     [ax[i].grid(True, alpha=0.25) for i in range(len(my_cosmo_learn.mock_data.keys()))]
     ax[0].legend(loc='upper left', prop={'size': 9})
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     plt.show()
 
     # mcmc and ga-fisher reconstruction
-    fig, ax=my_cosmo_learn.show_mocks(show_input=False)
+    fig, ax=my_cosmo_learn.show_mocks(show_input=True)
     my_cosmo_learn.show_bestfit_curve(ax=ax, method='MCMC', label='MCMC', color='pink')
     my_cosmo_learn.show_bestfit_curve(ax=ax, method='GAFisher', color='orange', alpha=0.15, hatch='|', label='GA-Fisher')
     [ax[i].grid(True, alpha=0.25) for i in range(len(my_cosmo_learn.mock_data.keys()))]

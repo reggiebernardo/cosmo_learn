@@ -1,6 +1,8 @@
 #!/bin/bash
 
+# export PYTHONPATH=/path/to/your/cosmo_learn:$PYTHONPATH
 export PYTHONPATH=/home/rbernardo/repos/cosmo_learn:$PYTHONPATH
+
 python mocks.py
 python hists_mcmc.py
 python heat_mcmc.py
