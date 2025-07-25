@@ -14,15 +14,15 @@ if __name__ == '__main__':
     H0, Om0, w0, s8 = 67.74, 0.3095, -0.997, 0.834
 
     my_cosmo_learn=CosmoLearn([H0, Om0, w0, s8], seed=14000605)
-    mock_keys=['CosmicChronometers', 'SuperNovae', 'BaryonAcousticOscillations', \
+    mock_keys=['CosmicChronometers', 'SuperNovae', \
                'BrightSirens', 'RedshiftSpaceDistorsions']
 
     my_cosmo_learn.make_mock(mock_keys=mock_keys)
-    my_cosmo_learn.init_ann(show_summary=True)
-    my_cosmo_learn.train_ann()
+    my_cosmo_learn.init_ann()
+    my_cosmo_learn.train_ann(verbose=0)
 
     my_cosmo_learn.show_ann_loss()
-    plt.savefig('figs/ann_loss_x.pdf', dpi=300, bbox_inches='tight')
+    plt.savefig('figs/ann_loss.pdf', dpi=300, bbox_inches='tight')
     plt.show()
 
     # plots results
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     [ax[i].grid(True, alpha=0.25) for i in range(len(my_cosmo_learn.mock_data.keys()))]
     ax[0].legend(loc='upper left', prop={'size': 9})
     fig.tight_layout(); fig.subplots_adjust(hspace=0.18)
-    fig.savefig('figs/ann_x.pdf', dpi=300, bbox_inches='tight')
+    fig.savefig('figs/ann.pdf', dpi=300, bbox_inches='tight')
     plt.show()
 
     end_time = time.time()  # dnd the timer

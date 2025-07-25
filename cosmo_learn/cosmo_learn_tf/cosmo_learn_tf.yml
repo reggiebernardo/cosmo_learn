@@ -1,21 +1,18 @@
-name: cosmo_learn_x
+name: cosmo_learn
 channels:
   - conda-forge
 dependencies:
   - python=3.10
   - numpy
   - scipy=1.13.1
-  - scikit-learn=1.6.1
+  - scikit-learn
   - astropy
   - numdifftools
   - multiprocess
   - corner
   - emcee
   - tqdm
+  - tensorflow
   - pip
   - pip:
       - geneticalgorithm
-      - torch
-      - torchvision
-      - torchaudio
-      - refann
