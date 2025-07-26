@@ -410,13 +410,15 @@ class BRR_sk:
 # # 1 GW COSMO CLASS
 
 class CosmoLearn:
+    # def __init__(self, params, de_model='no pert', k2cs2=1e-10, hh=1e-10, \
+    #              pop_model='Pop III', rd_fid=147.46, Tcmb0=2.725, seed=None):
     def __init__(self, params, de_model='no pert', k2cs2=1e-10, hh=1e-10, \
-                 pop_model='Pop III', rd_fid=147.46, Tcmb0=2.725, seed=None):
+                 rd_fid=147.46, Tcmb0=2.725, seed=None):
         self.params = params
         self.de_model=de_model
         self.k2cs2=k2cs2
         self.hh=hh
-        self.pop_model=pop_model
+        # self.pop_model=pop_model
         self.rd_fid=rd_fid
         self.Tcmb0=Tcmb0
         self.seed = seed
@@ -511,12 +513,13 @@ class CosmoLearn:
         self.mock_data[key]=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
         return z_mock, y_mock, yerr_mock
     
-    def make_bright_sirens_mock(self, years=3):
+    def make_bright_sirens_mock(self, years=3, pop_model='Pop III'):
         # pop_models=['Pop III', 'Delay', 'No Delay']
         H0, Om0, w0, _=self.params
         Ok0=0; wa=0
         params_w0wa=[H0, Om0, Ok0, w0, wa] # input to LISA code is w0wa params: H0, Om0, Ok0, w0, wa
-        z_mock, y_mock, yerr_mock = generate(population=self.pop_model, years=years, params=params_w0wa)
+        # z_mock, y_mock, yerr_mock = generate(population=self.pop_model, years=years, params=params_w0wa)
+        z_mock, y_mock, yerr_mock = generate(population=pop_model, years=years, params=params_w0wa)
         self.mock_data['BrightSirens']=split_data(z_mock, y_mock, yerr_mock, random_state=self.seed)
         return z_mock, y_mock, yerr_mock
 
@@ -530,7 +533,7 @@ class CosmoLearn:
             if key=='BaryonAcousticOscillations':
                 self.make_desi1_like()
             if key=='BrightSirens':
-                self.make_bright_sirens_mock(years=years)
+                self.make_bright_sirens_mock(pop_model=pop_model, years=years)
             if key=='RedshiftSpaceDistorsions':
                 self.make_rsd_like()
 
