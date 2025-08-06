@@ -1,4 +1,4 @@
-name: cosmo_learn
+name: cosmo-learn
 channels:
   - conda-forge
 dependencies:
@@ -19,4 +19,4 @@ dependencies:
       - torchvision
       - torchaudio
       - refann
-      - cosmo_learn
+      - cosmo-learn

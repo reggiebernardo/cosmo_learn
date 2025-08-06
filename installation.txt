@@ -2,6 +2,5 @@
 conda env create -f cosmo_learn.yml
 
 # test run in terminal
-conda activate cosmo_learn
+conda activate cosmo-learn
 python minimal_example.py
-

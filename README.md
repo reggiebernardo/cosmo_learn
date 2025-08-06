@@ -1,6 +1,6 @@
 # cosmo_learn
 
-Python code for learning cosmology using different methods and simulations based on real data. See `cosmo_tutorial.ipynb` for basic usage and [arXiv:25xx.yyyzz](https://arxiv.org/abs/25xx.yyyzz) for more details.
+Python code for learning cosmology using different methods and simulations based on real data. See notebook `cosmo_tutorial.ipynb` (or `minimal_example.py`) for basic usage; and [arXiv:25xx.yyyzz](https://arxiv.org/abs/25xx.yyyzz) for more details.
 
 Please cite the above paper when using `cosmo-learn`.
 
