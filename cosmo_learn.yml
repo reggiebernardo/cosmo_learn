@@ -19,3 +19,4 @@ dependencies:
       - torchvision
       - torchaudio
       - refann
+      - cosmo_learn

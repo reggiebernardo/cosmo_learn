@@ -1,0 +1,32 @@
+Metadata-Version: 2.4
+Name: cosmo_learn
+Version: 0.0.0
+Summary: Cosmological simulations in one place
+Home-page: https://github.com/reggiebernardo/cosmo_learn
+Author: Reginald Christian Bernardo
+Author-email: reginaldchristianbernardo@gmail.com
+License: MIT
+Requires-Python: ==3.10.*
+License-File: LICENSE
+Requires-Dist: numpy
+Requires-Dist: scipy==1.13.1
+Requires-Dist: scikit-learn==1.6.1
+Requires-Dist: astropy
+Requires-Dist: numdifftools
+Requires-Dist: multiprocess
+Requires-Dist: corner
+Requires-Dist: emcee
+Requires-Dist: tqdm
+Requires-Dist: geneticalgorithm
+Requires-Dist: torch
+Requires-Dist: torchvision
+Requires-Dist: torchaudio
+Requires-Dist: refann
+Dynamic: author
+Dynamic: author-email
+Dynamic: home-page
+Dynamic: license
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

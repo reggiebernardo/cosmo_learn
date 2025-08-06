@@ -1,0 +1,14 @@
+numpy
+scipy==1.13.1
+scikit-learn==1.6.1
+astropy
+numdifftools
+multiprocess
+corner
+emcee
+tqdm
+geneticalgorithm
+torch
+torchvision
+torchaudio
+refann
