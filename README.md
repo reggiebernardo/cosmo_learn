@@ -2,10 +2,10 @@
 
 Python code for learning cosmology using different methods and simulations based on real data. See `cosmo_tutorial.ipynb` for basic usage and [arXiv:25xx.yyyzz](https://arxiv.org/abs/25xx.yyyzz) for more details.
 
-Please cite the above paper when using `cosmo_learn`.
+Please cite the above paper when using `cosmo-learn`.
 
 Recommended Installation (in a conda environment): `conda env create -f cosmo_learn.yml` <br />
-Easy Installation: `pip install cosmo_learn`
+Easy Installation: `pip install cosmo-learn`
 
 ## Upcoming
 
