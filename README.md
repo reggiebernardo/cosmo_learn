@@ -4,6 +4,7 @@ Python code for learning cosmology using different methods (MCMC, Gaussian proce
 
 Please cite the above paper when using `cosmo-learn`.
 
+Tested on Linux, Mac and Windows WSL <br />
 Dependencies: `python 3.10` <br />
 Recommended Installation (in a conda environment): `conda env create -f cosmo_learn.yml` <br />
 Easy Installation: `pip install cosmo-learn`
